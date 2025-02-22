@@ -1,0 +1,85 @@
+{% extends 'student/base.html' %}
+
+
+
+{% block student_profile %}
+
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .profile-card {
+            max-width: 400px;
+            margin: 50px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        .profile-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid #007bff;
+        }
+        .profile-card h3 {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+        .profile-card p {
+            font-size: 14px;
+            color: #666;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            justify-content: start;
+            margin: 8px 0;
+            font-size: 16px;
+        }
+        .info-item i {
+            width: 25px;
+            color: #007bff;
+        }
+    </style>
+
+
+    <div class="profile-card">
+        {% comment %} <img src="{% static 'images/default-profile.jpg' %}" alt="Profile Image" class="profile-img"> {% endcomment %}
+        <h3>{{ student_details.name }}</h3>
+        <p><strong>Registration No:</strong> {{ student_details.reg_no }}</p>
+        <div class="info-item">
+            <i class="fas fa-id-badge"></i>
+            <span><strong>Name:</strong> {{ student_details.student_name }}</span>
+        </div>
+
+        <div class="info-item">
+            <i class="fas fa-graduation-cap"></i>
+            <span><strong>Department:</strong> {{ student_details.department }}</span>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span><strong>Batch:</strong> {{ student_details.batch }}</span>
+        </div>
+        {% comment %} <div class="info-item">
+            <i class="fas fa-user-tag"></i>
+            <span><strong>Entry Status:</strong> {{ entry_status }}</span>
+        </div> {% endcomment %}
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+
+
+
+    
+{% endblock student_profile %}
+    

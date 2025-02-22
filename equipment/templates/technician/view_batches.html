@@ -1,0 +1,209 @@
+{% extends 'technician/base.html' %}
+{% block edit %}
+<div class="container mt-4">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Message Display -->
+  {% if messages %}
+    <div class="mt-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <h2 class="mb-4 text-center">Lab Batch Assignments</h2>
+
+  <!-- Filter Form -->
+  <form method="get" class="row g-3 mb-4 p-4 border rounded shadow-sm bg-light">
+    <div class="col-lg-4 col-md-6">
+      <label for="course_code" class="form-label">
+        <i class="fa-solid fa-book me-1"></i> Course Code
+      </label>
+      <select class="form-select select2 custom-select" id="course_code" name="course_code">
+        <option value="">Select Course Code</option>
+        {% for code in course_codes %}
+          <option value="{{ code }}" {% if code == course_code_filter %}selected{% endif %}>{{ code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-lg-4 col-md-6">
+      <label for="department" class="form-label">
+        <i class="fa-solid fa-building me-1"></i> Department
+      </label>
+      <select class="form-select select2 custom-select" id="department" name="department">
+        <option value="">Select Department</option>
+        {% for dept in departments %}
+          <option value="{{ dept }}" {% if dept == department_filter %}selected{% endif %}>{{ dept }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-lg-4 col-md-6">
+      <label for="section" class="form-label">
+        <i class="fa-solid fa-th-list me-1"></i> Section
+      </label>
+      <select class="form-select select2 custom-select" id="section" name="section">
+        <option value="">Select Section</option>
+        {% for sec in sections %}
+          <option value="{{ sec }}" {% if sec == section_filter %}selected{% endif %}>{{ sec }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-lg-4 col-md-6">
+      <label for="lab_batch_no" class="form-label">
+        <i class="fa-solid fa-flask me-1"></i> Lab Batch No
+      </label>
+      <select class="form-select select2 custom-select" id="lab_batch_no" name="lab_batch_no">
+        <option value="">Select Lab Batch</option>
+        {% for batch in lab_batch_nos %}
+          <option value="{{ batch }}" {% if batch == lab_batch_no_filter %}selected{% endif %}>{{ batch }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-lg-4 col-md-6">
+      <label for="assessment" class="form-label">
+        <i class="fa-solid fa-pen-to-square me-1"></i> Assessment
+      </label>
+      <select class="form-select select2 custom-select" id="assessment" name="assessment">
+        <option value="">Select Assessment</option>
+        {% for assess in assessments %}
+          <option value="{{ assess }}" {% if assess == assessment_filter %}selected{% endif %}>{{ assess }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Submit Button (Centered) -->
+    <div class="col-12 text-center mt-3">
+      <button type="submit" class="btn btn-primary px-4 py-2">
+        <i class="fa-solid fa-filter me-1"></i> Filter
+      </button>
+    </div>
+</form>
+
+
+  {% if filters_applied %}
+    {% if assignments %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover shadow-sm">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>Reg No</th>
+                        <th>Lab Batch No</th>
+                        <th>Course Code</th>
+                        <th>Experiment No</th>
+                        <th>Assessment</th>
+                        <th>Created At</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in assignments %}
+                        <tr class="text-center">
+                            <td>{{ assignment.student_id }}</td>
+                            <td>{{ assignment.lab_batch_no }}</td>
+                            <td>{{ assignment.course_code }}</td>
+                            <td>{{ assignment.ex_no }}</td>
+                            <td>{{ assignment.assessment }}</td>
+                            <td>{{ assignment.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                              <a href="{% url 'edit_lab_batch_assignment' assignment.id %}" class="Btn">
+                                Edit
+                                <svg class="svg" viewBox="0 0 512 512">
+                                  <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231z"></path>
+                                </svg>
+                              </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-center text-muted">No results found for the selected filters.</p>
+    {% endif %}
+{% else %}
+    <p class="text-center text-muted">Please select a filter to view the data.</p>
+{% endif %}
+
+</div>
+
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+
+<!-- Select2 CSS and JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
+<!-- JavaScript for Select2 -->
+<script>
+  $(document).ready(function() {
+    $('.select2').select2({
+      width: '100%',
+      theme: 'bootstrap-5'
+    });
+  });
+</script>
+
+<!-- CSS Styling -->
+<style>
+  .Btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100px;
+    height: 40px;
+    border: none;
+    padding: 0px 20px;
+    background-color: rgb(168, 38, 255);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 10px;
+    box-shadow: 5px 5px 0px rgb(140, 32, 212);
+    transition-duration: .3s;
+    text-decoration: none; /* Removes underline */
+  }
+  
+  /* Ensures all links inside the button also have no underline */
+  .Btn:hover,
+  .Btn:focus,
+  .Btn:visited {
+    text-decoration: none; /* Ensures no underline in any state */
+  }
+  
+
+  .svg {
+    width: 13px;
+    position: absolute;
+    right: 0;
+    margin-right: 20px;
+    fill: white;
+    transition-duration: .3s;
+  }
+
+  .Btn:hover {
+    color: transparent;
+  }
+
+  .Btn:hover svg {
+    right: 43%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    transition-duration: .3s;
+  }
+
+  .Btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0px rgb(140, 32, 212);
+  }
+</style>
+{% endblock edit %}

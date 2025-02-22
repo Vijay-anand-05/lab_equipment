@@ -1,0 +1,116 @@
+{% extends 'technician/base.html' %}
+{% block add_course %}
+
+<div class="container mt-5">
+    <div class="card shadow-lg p-4 rounded" style="max-width: 800px; margin: auto;">
+        <h3 class="text-center mb-4 text-primary">Add Course</h3>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                 </div>
+            {% endfor %}
+        {% endif %}
+
+
+        <form method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="batch" class="font-weight-bold">Batch</label>
+                    <input type="text" name="batch" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="regulations" class="font-weight-bold">Regulations:</label>
+                    <input type="text" name="regulations" class="form-control" required>
+                </div>
+                {% comment %} <div class="col-md-6 mb-3">
+                    <label for="degree" class="font-weight-bold">Degree:</label>
+                    <input type="text" name="degree" class="form-control" required>
+                </div> {% endcomment %}
+                
+                
+                <div class="col-md-6 mb-3">
+                    <label for="department" class="font-weight-bold">Department:</label>
+                    <select name="department" id="department" class="form-control" required>
+                        <option value="" selected disabled>-- Select Department --</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                
+                
+                <div class="col-md-6 mb-3">
+                    <label for="semester" class="font-weight-bold">Semester:</label>
+                    <select name="semester" class="form-control" required>
+                        <option value="">Select Semester</option>
+                        {% for s in sem %}
+                            <option value="{{ s }}">{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="course_code" class="font-weight-bold">Course Code:</label>
+                    <input type="text" name="course_code" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="course_title" class="font-weight-bold">Course Title:</label>
+                    <input type="text" name="course_title" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="category" class="font-weight-bold">Category:</label>
+                    <select name="category" class="form-control" required>
+                        <option value="">Select Category</option>
+                        {% for category in form.category.field.queryset %}
+                            <option value="{{ category.id }}">{{ category.category_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="subject_type" class="font-weight-bold">Subject Type:</label>
+                    <select name="subject_type" class="form-control" required>
+                        <option value="">Select Subject Type</option>
+                        {% for subject in form.subject_type.field.queryset %}
+                            <option value="{{ subject.id }}">{{ subject.type_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="lecturer" class="font-weight-bold">Lecturer:</label>
+                    <input type="number" name="lecturer" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="tutorial" class="font-weight-bold">Tutorial:</label>
+                    <input type="number" name="tutorial" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="practical" class="font-weight-bold">Practical:</label>
+                    <input type="number" name="practical" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="total_contact_periods" class="font-weight-bold">Total Contact Periods:</label>
+                    <input type="number" name="total_contact_periods" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="credits" class="font-weight-bold">Credits:</label>
+                    <input type="number" name="credits" class="form-control" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Add Course</button>
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap JS & jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+{% endblock add_course %}

@@ -1,0 +1,37 @@
+{% extends 'technician/base.html' %}
+
+
+{% block add_category %}
+
+
+{% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<div class="container mt-5">
+    <div class="card shadow-lg p-4 rounded" style="max-width: 500px; margin: auto;">
+        <h3 class="text-center mb-4">Add Category</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="category_name" class="font-weight-bold">Category Name:</label>
+                <input type="text" name="category_name" class="form-control" placeholder="Enter category name" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Category</button>
+        </form>
+    </div>
+</div>
+
+
+    
+{% endblock add_category %}
+    

@@ -1,0 +1,96 @@
+{% extends 'student/base.html' %}
+
+{% block apparatus_request %}
+
+<div class="container mt-4">
+    <h2 class="text-center">Apparatus Request</h2>
+
+    <!-- Display Student Department -->
+    <div class="alert alert-info">
+        <strong>Department:</strong> {{ student_department }}
+    </div>
+
+    <!-- Filter Form -->
+    <form method="GET" class="mb-3">
+        <div class="row">
+            <!-- Exercise No Filter -->
+            <div class="col-md-3">
+                <label for="ex_no"><i class="fas fa-list-ol"></i> Exercise No</label>
+                <select name="ex_no" id="ex_no" class="form-control">
+                    <option value="">Select Exercise No</option>
+                    {% for ex in ex_no_list %}
+                        <option value="{{ ex }}" {% if request.GET.ex_no == ex %}selected{% endif %}>{{ ex }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Course Code Filter -->
+            <div class="col-md-3">
+                <label for="course_code"><i class="fas fa-book"></i> Course Code</label>
+                <select name="course_code" id="course_code" class="form-control">
+                    <option value="">Select Course Code</option>
+                    {% for code in course_code_list %}
+                        <option value="{{ code }}" {% if request.GET.course_code == code %}selected{% endif %}>{{ code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Practical Course Filter -->
+            <div class="col-md-3">
+                <label for="practical_course"><i class="fas fa-flask"></i> Practical Course</label>
+                <select name="practical_course" id="practical_course" class="form-control">
+                    <option value="">Select Practical Course</option>
+                    {% for course in practical_course_list %}
+                        <option value="{{ course }}" {% if request.GET.practical_course == course %}selected{% endif %}>{{ course }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filter Button -->
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Display Experiment Details if Filtered Data Exists -->
+    {% if apparatus_list.exists %}
+        <div class="alert alert-info">
+            <strong>Experiment No:</strong> {{ experiment_no }} |
+            <strong>Experiment Name:</strong> {{ experiment_name }}
+        </div>
+
+        <!-- Apparatus List -->
+        <form method="POST">
+            {% csrf_token %}
+            <table class="table table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Apparatus Name</th>
+                        <th>Range Specification</th>
+                        <th>Quantity Available</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for apparatus in apparatus_list %}
+                    <tr>
+                        <td>{{ apparatus.apparatus_name }}</td>
+                        <td>{{ apparatus.range_specification|default:"N/A" }}</td>
+                        <td>{{ apparatus.quantity_available }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-success btn-block">Request All Filtered Apparatus</button>
+        </form>
+    
+    {% else %}
+        <div class="alert alert-warning text-center">No apparatus found. Try adjusting your filters.</div>
+    {% endif %}
+
+</div>
+
+{% endblock apparatus_request %}

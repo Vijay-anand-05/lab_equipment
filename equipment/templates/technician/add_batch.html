@@ -1,0 +1,246 @@
+{% extends 'technician/base.html' %}
+
+{% block add_batch %}
+<div class="container mt-4">
+  <!-- Message Display -->
+  {% if messages %}
+    <div class="mt-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <h2 class="mb-4 text-center">Filter Students</h2>
+
+  <!-- Filter Form (GET) -->
+  <form method="get" class="row g-3 mb-4 p-3 border rounded shadow-sm bg-light">
+    <!-- Batch Filter -->
+    <div class="col-md-4">
+      <label for="batch" class="form-label">
+        <i class="fa-solid fa-calendar-alt me-1"></i> Batch
+      </label>
+      <select class="form-select custom-select" id="batch" name="batch">
+        <option value="">Select Batch</option>
+        {% for batch in batches %}
+          <option value="{{ batch }}" {% if batch == batch_filter %}selected{% endif %}>{{ batch }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- Department Filter -->
+    <div class="col-md-4">
+      <label for="department" class="form-label">
+        <i class="fa-solid fa-building me-1"></i> Department
+      </label>
+      <select class="form-select custom-select" id="department" name="department">
+        <option value="">Select Department</option>
+        {% for dept in departments %}
+          <option value="{{ dept }}" {% if dept == department_filter %}selected{% endif %}>{{ dept }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- Section Filter -->
+    <div class="col-md-4">
+      <label for="section" class="form-label">
+        <i class="fa-solid fa-th-list me-1"></i> Section
+      </label>
+      <select class="form-select custom-select" id="section" name="section">
+        <option value="">Select Section</option>
+        {% for sec in section_options %}
+          <option value="{{ sec }}" {% if sec == section_filter %}selected{% endif %}>{{ sec }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 text-center">
+      <button type="submit" class="btn btn-primary px-4 py-2 my-2">
+        <i class="fa-solid fa-filter me-1"></i> Filter
+      </button>
+    </div>
+  </form>
+
+  {% if filtered %}
+    <!-- Experiment Entry Form -->
+    <form method="post">
+      {% csrf_token %}
+      <h4 class="text-center mb-4">Experiment Entry Form</h4>
+      <!-- Experiment and Course Code Fields -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="experiment_no" class="form-label">
+            <i class="fa-solid fa-flask me-1"></i> Experiment No.
+          </label>
+          <select class="form-control" id="experiment_no" name="experiment_no">
+            <option value="" selected disabled>Select Experiment No.</option>
+            {% for no in ex_no %}
+              <option value="{{ no }}">{{ no }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label for="course_code" class="form-label">
+            <i class="fa-solid fa-book me-1"></i> Course Code
+          </label>
+          <select class="form-control" id="course_code" name="course_code">
+            <option value="" selected disabled>Select Course Code</option>
+            {% for course in course_code %}
+              <option value="{{ course }}">{{ course }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <!-- Lab Batch and Assessment Fields -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="lab_batch_no" class="form-label">
+            <i class="fa-solid fa-pencil me-1"></i> Lab Batch No
+          </label>
+          <input type="text" class="form-control" id="lab_batch_no" name="lab_batch_no" placeholder="Enter Lab Batch No">
+        </div>
+        <div class="col-md-6">
+          <label for="assessment" class="form-label">
+            <i class="fa-solid fa-pen-to-square me-1"></i> Assessment
+          </label>
+          <input type="text" class="form-control" id="assessment" name="assessment" placeholder="Enter Assessment">
+        </div>
+      </div>
+      <!-- Save Button Centered -->
+      <div class="d-flex justify-content-center align-items-end mb-4">
+        <button type="submit" class="btn btn-success w-50 py-2">
+          <i class="fa-solid fa-save me-1"></i> Save Selected Batches
+        </button>
+      </div>
+      <h3 class="mb-3 mt-4 text-center">Assign Batch</h3>
+      <!-- Student Table -->
+      <div class="table-responsive">
+        <table class="table table-striped table-hover shadow-sm">
+          <thead class="table-dark text-center">
+            <tr>
+              <th>Name</th>
+              <th>Register Number</th>
+              <th>Section</th>
+              <th>Gender</th>
+              <th>Select</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+              <tr class="align-middle text-center">
+                <td>{{ student.student_name }}</td>
+                <td>{{ student.reg_no }}</td>
+                <td>{{ student.section }}</td>
+                <td>{{ student.gender }}</td>
+                <td>
+                  <div class="checkbox-container">
+                    <div class="checkbox-wrapper">
+                      <input class="checkbox" id="chk_{{ student.reg_no }}" type="checkbox" name="selected_students" value="{{ student.reg_no }}">
+                      <label class="checkbox-label" for="chk_{{ student.reg_no }}">
+                        <div class="checkbox-flip">
+                          <div class="checkbox-front">
+                            <svg fill="white" height="32" width="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M19 13H12V19H11V13H5V12H11V6H12V12H19V13Z" class="icon-path"></path>
+                            </svg>
+                          </div>
+                          <div class="checkbox-back">
+                            <svg fill="white" height="32" width="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M9 19l-7-7 1.41-1.41L9 16.17l11.29-11.3L22 6l-13 13z" class="icon-path"></path>
+                            </svg>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted">No students found</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  {% else %}
+    <p class="text-muted text-center mt-4">Please use the filter form above to display student data.</p>
+  {% endif %}
+</div>
+
+<!-- Custom CSS for the Stylish Checkbox -->
+<style>
+  .checkbox-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    margin: 0;
+  }
+  .checkbox {
+    display: none;
+  }
+  .checkbox-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .checkbox-flip {
+    width: 60px;
+    height: 60px;
+    perspective: 1000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: transform 0.4s ease;
+  }
+  .checkbox-front,
+  .checkbox-back {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    backface-visibility: hidden;
+    transition: transform 0.3s ease;
+  }
+  .checkbox-front {
+    background: linear-gradient(135deg, #ff6347, #f76c6c);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: rotateY(0deg);
+  }
+  .checkbox-back {
+    background: linear-gradient(135deg, #36b54a, #00c1d4);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: rotateY(180deg);
+  }
+  .checkbox-wrapper:hover .checkbox-flip {
+    transform: scale(1.1);
+    transition: transform 0.4s ease-out;
+  }
+  .checkbox:checked + .checkbox-label .checkbox-front {
+    transform: rotateY(180deg);
+  }
+  .checkbox:checked + .checkbox-label .checkbox-back {
+    transform: rotateY(0deg);
+  }
+  .checkbox:focus + .checkbox-label .checkbox-flip {
+    box-shadow: 0 0 15px rgba(54, 181, 73, 0.7), 0 0 20px rgba(0, 193, 212, 0.4);
+    transition: box-shadow 0.3s ease;
+  }
+  .icon-path {
+    stroke: white;
+    stroke-width: 2;
+    fill: transparent;
+  }
+</style>
+
+<!-- FontAwesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" 
+      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" 
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+{% endblock add_batch %}

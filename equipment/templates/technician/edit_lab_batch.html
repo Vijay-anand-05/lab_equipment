@@ -1,0 +1,154 @@
+{% extends 'technician/base.html' %}
+
+{% block edit %}
+
+
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">Edit Lab Batch Assignment</h2>
+  
+  <!-- Message Display -->
+  {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+
+
+  
+  <form method="post">
+    {% csrf_token %}
+    <div class="row mb-3">
+      <!-- Lab Batch No Field -->
+      <div class="col-md-6">
+        <label for="lab_batch_no" class="form-label">
+          <i class="fa-solid fa-pencil me-1"></i> Lab Batch No
+        </label>
+        <input type="text" class="form-control" id="lab_batch_no" name="lab_batch_no"
+               value="{{ assignment.lab_batch_no }}" placeholder="Enter Lab Batch No">
+      </div>
+      <!-- Course Code Field -->
+      <div class="col-md-6">
+        <label for="course_code" class="form-label">
+          <i class="fa-solid fa-book me-1"></i> Course Code
+        </label>
+        <select class="form-select custom-select" id="course_code" name="course_code">
+          <option value="" disabled>Select Course Code</option>
+          {% for code in course_codes %}
+            <option value="{{ code }}" {% if code == assignment.course_code %}selected{% endif %}>
+              {{ code }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    
+    <div class="row mb-3">
+      <!-- Experiment No Field -->
+      <div class="col-md-6">
+        <label for="experiment_no" class="form-label">
+          <i class="fa-solid fa-flask me-1"></i> Experiment No.
+        </label>
+        <select class="form-select custom-select" id="experiment_no" name="experiment_no">
+          <option value="" disabled>Select Experiment No.</option>
+          {% for no in ex_nos %}
+            <option value="{{ no }}" {% if no == assignment.ex_no %}selected{% endif %}>
+              {{ no }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Assessment Field -->
+      <div class="col-md-6">
+        <label for="assessment" class="form-label">
+          <i class="fa-solid fa-pen-to-square me-1"></i> Assessment
+        </label>
+        <input type="text" class="form-control" id="assessment" name="assessment"
+               value="{{ assignment.assessment }}" placeholder="Enter Assessment">
+      </div>
+    </div>
+    
+    <div class="text-center">
+      <button>
+        <span class="button_top"> 
+          <i class="fa-solid fa-arrows-rotate"></i> Update Assignment
+        </span>
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- FontAwesome CDN (if not in base template) -->
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom CSS for Select Styling -->
+<style>
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .btn-close {
+    padding: 0.5rem;
+  }
+  
+  button {
+    /* Variables */
+    --button_radius: 0.75em;
+    --button_color: #e8e8e8;
+    --button_outline_color: red;
+    font-size: 17px;
+    font-weight: bold;
+    border: none;
+    border-radius: var(--button_radius);
+    background: var(--button_outline_color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .button_top {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    box-sizing: border-box;
+    border: 2px solid var(--button_outline_color);
+    border-radius: var(--button_radius);
+    padding: 0.75em 1.5em;
+    background: var(--button_color);
+    color: var(--button_outline_color);
+    transform: translateY(-0.2em);
+    transition: transform 0.1s ease;
+  }
+  
+  .icon {
+    width: 1em;
+    height: 1em;
+    stroke: var(--button_outline_color);
+  }
+  
+  button:hover .button_top {
+    /* Pull the button upwards when hovered */
+    transform: translateY(-0.33em);
+  }
+  
+  button:active .button_top {
+    /* Push the button downwards when pressed */
+    transform: translateY(0);
+  }
+  
+</style>
+
+{% endblock edit %}

@@ -1,0 +1,127 @@
+{% extends 'technician/base.html' %}
+
+{% block add_lab_exercise %}
+
+<div class="container mt-5">
+    <div class="card shadow-lg p-4 rounded" style="max-width: 700px; margin: auto;">
+        <h3 class="text-center mb-4 text-primary">Add Lab Exercise</h3>
+
+        <!-- Display Django messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Display form errors -->
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Please fix the following errors:</strong>
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ field|title }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Lab Exercise Form -->
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_Ex_no" class="form-label">Exercise Number:</label>
+                    <input type="text" name="Ex_no" id="id_Ex_no" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="department" class="form-label">Department:</label>
+                    <select name="department" id="department" class="form-control" required>
+                        <option value="" selected disabled>-- Select Department --</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_practical_course" class="form-label">Practical Course:</label>
+                    <select name="practical_course" id="id_practical_course" class="form-control" required>
+                        <option value="" selected disabled>-- Select Course --</option>
+                        {% for course in courses %}
+                            <option value="{{ course.course_title }}">{{ course.course_title }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_course_code" class="form-label">Course Code:</label>
+                    <select name="course_code" id="id_course_code" class="form-control" required>
+                        <option value="" selected disabled>-- Select Course Code --</option>
+                        {% for course in courses %}
+                            <option value="{{ course.course_code }}">{{ course.course_code }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_Ex_title" class="form-label">Exercise Title:</label>
+                    <input type="text" name="Ex_title" id="id_Ex_title" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_sem" class="form-label">Semester:</label>
+                    <select name="sem" id="id_sem" class="form-control" required>
+                        <option value="">Select Semester</option>
+                        {% for s in sem %}
+                            <option value="{{ s }}">{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_description" class="form-label">Experiment Details:</label>
+                <textarea name="description" id="id_description" class="form-control" rows="3" required></textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_regulations" class="form-label">Regulation:</label>
+                    <select name="regulations" id="id_regulations" class="form-control" required>
+                        <option value="" selected disabled>-- Select Regulation --</option>
+                        {% for reg in regulations %}
+                            <option value="{{ reg }}">{{ reg }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_batch" class="form-label">Batch:</label>
+                    <select name="batch" id="id_batch" class="form-control" required>
+                        <option value="" selected disabled>-- Select Batch --</option>
+                        {% for batch in batches %}
+                            <option value="{{ batch }}">{{ batch }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Add Lab Exercise</button>
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap JS & jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+{% endblock add_lab_exercise %}

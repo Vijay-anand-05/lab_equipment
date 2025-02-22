@@ -1,0 +1,216 @@
+{% extends "student/base.html" %}
+
+
+{% block slip %}
+
+
+
+    <style>
+        .border-responsive {
+            border: 1px solid #000;
+        }
+    </style>
+
+<div class="p-4">
+    <div class="container border-responsive p-4">
+        <h1 class="text-center fw-bold fs-6">RAMCO INSTITUTE OF TECHNOLOGY, RAJAPALAYAM</h1>
+        <h2 class="text-center fw-bold fs-6">DEPARTMENT OF ELECTRICAL AND ELECTRONICS ENGINEERING</h2>
+        <h3 class="text-center fw-bold fs-6">APPARATUS ISSUE SLIP</h3>
+        
+        <div class="mt-3">
+            <div class="row">
+                <div class="col-md-6 col-12">
+                    <span class="fw-bold">NAME OF THE LAB:</span> <input type="text" class="form-control d-inline-block w-100 w-md-auto" placeholder="ENGINEERING PRACTICES LAB/GE3271">
+                </div>
+                <div class="col-md-6 col-12 text-md-end mt-2 mt-md-0">
+                    <span class="fw-bold">DATE:</span> <input type="date" class="form-control d-inline-block w-100 w-md-auto">
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6 col-12">
+                    <span class="fw-bold">DEPT/SEC:</span> <input type="text" class="form-control d-inline-block w-100 w-md-auto">
+                </div>
+                <div class="col-md-6 col-12 text-md-end mt-2 mt-md-0">
+                    <span class="fw-bold">BATCH NO:</span> <input type="text" class="form-control d-inline-block w-100 w-md-auto">
+                </div>
+            </div>
+            <div class="mt-2">
+                <span class="fw-bold">NAME OF THE EXPERIMENT:</span> <input type="text" class="form-control d-inline-block w-100">
+            </div>
+        </div>
+
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Sl.No.</th>
+                    <th>Name of Apparatus</th>
+                    <th>Range</th>
+                    <th>Quantity</th>
+                    <th>Received in good condition (Yes/No)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedYes1" value="yes">
+                            <label class="form-check-label" for="receivedYes1">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedNo1" value="no">
+                            <label class="form-check-label" for="receivedNo1">No</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedYes2" value="yes">
+                            <label class="form-check-label" for="receivedYes2">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedNo2" value="no">
+                            <label class="form-check-label" for="receivedNo2">No</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedYes3" value="yes">
+                            <label class="form-check-label" for="receivedYes3">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedNo3" value="no">
+                            <label class="form-check-label" for="receivedNo3">No</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedYes4" value="yes">
+                            <label class="form-check-label" for="receivedYes4">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedNo4" value="no">
+                            <label class="form-check-label" for="receivedNo4">No</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedYes5" value="yes">
+                            <label class="form-check-label" for="receivedYes5">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="receivedNo5" value="no">
+                            <label class="form-check-label" for="receivedNo5">No</label>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="mt-3">
+            <span class="fw-bold">TABLE NO:</span> <input type="text" class="form-control d-inline-block w-100 w-md-auto">
+        </div>
+
+        <table class="table table-bordered mt-2">
+            <thead>
+                <tr>
+                    <th>Sl.No.</th>
+                    <th>Name of the student</th>
+                    <th>Kit No.</th>
+                    <th>Register Number</th>
+                    <th>Signature</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                    <td><input type="text" class="form-control"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="mt-2">
+            <span class="fw-bold">Received back in good condition (Yes/No)</span> 
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="receivedBackYes" value="yes">
+                <label class="form-check-label" for="receivedBackYes">Yes</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="receivedBackNo" value="no">
+                <label class="form-check-label" for="receivedBackNo">No</label>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6 col-12">
+                <span class="fw-bold">TECHNICIAN</span>
+            </div>
+            <div class="col-md-6 col-12 text-md-end mt-2 mt-md-0">
+                <span class="fw-bold">FACULTY INCHARGE</span>
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-md-4 col-12">
+                <span>Form No. PU 06</span>
+            </div>
+            <div class="col-md-4 col-12 text-center mt-2 mt-md-0">
+                <span>Rev.No. 00</span>
+            </div>
+            <div class="col-md-4 col-12 text-md-end mt-2 mt-md-0">
+                <span>Effective Date: 18.01.2016</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+{% endblock slip %}
+
+
+

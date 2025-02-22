@@ -1,0 +1,194 @@
+{% extends 'technician/base.html' %}
+
+{% block add_apparatus %}
+
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center text-primary">Add Apparatus</h2>
+
+        <form id="add-apparatus-form">
+            {% csrf_token %}
+
+            <!-- Experiment Details Section -->
+            <div class="row g-3">
+                
+                <div class="col-md-4">
+                    <label for="ex_no" class="form-label">Experiment Number:</label>
+                    <select name="ex_no" id="ex_no" class="form-control" required>
+                        <option value="" selected disabled>-- Select Ex no --</option>
+                        {% for e in ex_no %}
+                            <option value="{{ e }}">{{ e }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="course_code" class="form-label">Course Code:</label>
+                    <select name="course_code" id="course_code" class="form-control" required>
+                        <option value="" selected disabled>-- Select Course Code --</option>
+                        {% for c in course_code %}
+                            <option value="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="practical_course" class="form-label">Practical Course:</label>
+                    <select name="practical_course" id="practical_course" class="form-control" required>
+                        <option value="" selected disabled>-- Select Practical Course --</option>
+                        {% for p in practical_course %}
+                            <option value="{{ p }}">{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="regulations" class="form-label">Regulation:</label>
+                    <select name="regulations" id="regulations" class="form-control" required>
+                        <option value="" selected disabled>-- Select Regulation --</option>
+                        {% for reg in regulations %}
+                            <option value="{{ reg }}">{{ reg }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="batch" class="form-label">Batch:</label>
+                    <select name="batch" id="batch" class="form-control" required>
+                        <option value="" selected disabled>-- Select Batch --</option>
+                        {% for batch in batches %}
+                            <option value="{{ batch }}">{{ batch }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="department" class="form-label">Department:</label>
+                    <select name="department" id="department" class="form-control" required>
+                        <option value="" selected disabled>-- Select Department --</option>
+                        {% for dept in department_list %}
+                            <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="semester" class="form-label">Semester:</label>
+                    <select name="semester" id="semester" class="form-control" required>
+                        <option value="" selected disabled>-- Select Semester --</option>
+                        {% for s in sem %}
+                            <option value="{{ s }}">{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="experiment_name" class="form-label">Experiment Name:</label>
+                    <select name="experiment_name" id="experiment_name" class="form-control" required>
+                        <option value="" selected disabled>-- Select Experiment Name --</option>
+                        {% for e in experiment_name %}
+                            <option value="{{ e }}">{{ e }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Apparatus Table -->
+            <h4 class="mt-4 text-secondary">Apparatus Details</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Apparatus Name</th>
+                            <th>Range Specification</th>
+                            <th>Quantity</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apparatus-rows">
+                        <!-- Apparatus rows will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" class="btn btn-success" id="add-row-btn">+ Add Apparatus</button>
+            <button type="submit" class="btn btn-primary">Save All</button>
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap & jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Add apparatus row dynamically
+        $("#add-row-btn").on("click", function() {
+            $("#apparatus-rows").append(`
+                <tr>
+                    <td><input type="text" class="form-control apparatus_name" name="apparatus_name[]" placeholder="Enter Apparatus Name" required></td>
+                    <td><input type="text" class="form-control range_specification" name="range_specification[]" placeholder="Enter Range Specification" required></td>
+                    <td><input type="number" class="form-control quantity_available" name="quantity_available[]" placeholder="Enter Quantity" required></td>
+                    <td><button type="button" class="btn btn-danger remove-btn">Remove</button></td>
+                </tr>
+            `);
+        });
+
+        // Remove apparatus row dynamically
+        $(document).on("click", ".remove-btn", function() {
+            $(this).closest("tr").remove();
+        });
+
+        // Handle form submission
+        $("#add-apparatus-form").submit(function(e) {
+            e.preventDefault();
+        
+            let formData = {
+                csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val(),
+                ex_no: $("#ex_no").val(),
+                course_code: $("#course_code").val(),
+                practical_course: $("#practical_course").val(),
+                regulation: $("#regulations").val(),
+                batch: $("#batch").val(),
+                semester: $("#semester").val(),
+                experiment_name: $("#experiment_name").val(),
+                apparatus_entries: []
+            };
+        
+            // ✅ Collect apparatus data
+            $("#apparatus-rows tr").each(function() {
+                let row = $(this);
+                let apparatus_name = row.find(".apparatus_name").val();
+                let range_specification = row.find(".range_specification").val();
+                let quantity_available = row.find(".quantity_available").val();
+        
+                if (apparatus_name && quantity_available) {  
+                    formData.apparatus_entries.push({
+                        apparatus_name: apparatus_name,
+                        range_specification: range_specification,
+                        quantity_available: quantity_available
+                    });
+                }
+            });
+
+            console.log("Sending Data:", formData);  // ✅ Debugging
+        
+            $.ajax({
+                url: "{% url 'add_apparatus' %}",
+                type: "POST",
+                headers: { "X-CSRFToken": $("input[name=csrfmiddlewaretoken]").val() },
+                data: JSON.stringify(formData),
+                contentType: "application/json",
+                success: function(response) {
+                    alert("✅ Apparatus saved successfully!");
+                    location.reload();
+                },
+                error: function(xhr) {
+                    let errorMsg = xhr.responseJSON?.error || "Error saving apparatus";
+                    console.error("❌ Error:", errorMsg);
+                    alert(errorMsg);
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock add_apparatus %}

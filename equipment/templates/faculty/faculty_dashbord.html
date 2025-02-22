@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramco Institute of Technology</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <style>
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .vertical-nav {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #fff;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s;
+        }
+
+        .page-content {
+            margin-left: 250px;
+            transition: all 0.4s;
+        }
+
+        #sidebar.active {
+            margin-left: -250px;
+        }
+
+        #content.active {
+            margin-left: 0;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="vertical-nav" id="sidebar">
+        <div class="py-4 px-3 mb-4 bg-light border-bottom text-center">
+            <img src="{% static 'images/image.png' %}" alt="Logo" class="logo">
+            <h4 class="m-0">RIT</h4>
+            <p class="font-weight-normal text-muted mb-0">Ramco Institute of Technology</p>
+        </div>
+        <ul class="nav flex-column bg-white mb-0">
+            <li class="nav-item">
+                <a href="#" class="nav-link bg-info text-white">
+                    <i class="fa fa-chart-line mr-3"></i> Project Selection
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark">
+                    <i class="fa fa-sign-out-alt mr-3"></i> View Status
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark">
+                    <i class="fa fa-file-alt mr-3"></i> View Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark">
+                    <i class="fa fa-cog mr-3"></i> Settings
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark">
+                    <i class="fa fa-sign-out-alt mr-3"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="page-content p-5" id="content">
+        <button id="sidebarCollapse" type="button" class="btn btn-light bg-white rounded-pill shadow-sm px-4 mb-4">
+            <i class="fa fa-bars mr-2"></i><small class="text-uppercase font-weight-bold">Menu</small>
+        </button>
+        <h2 class="heading">Welcome to the Ramco Institute of Technology</h2>
+        <p class="title">Your project management dashboard is ready.</p>
+        
+        <!-- Selection Content -->
+        <div class="selection-content">
+            <h3>Select Your Project</h3>
+            <ul class="list-group">
+                <li class="list-group-item">Project 1: AI Development</li>
+                <li class="list-group-item">Project 2: Web Development</li>
+                <li class="list-group-item">Project 3: Mobile App Development</li>
+                <li class="list-group-item">Project 4: Data Science</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#sidebarCollapse').on('click', function () {
+                $('#sidebar').toggleClass('active');
+                $('#content').toggleClass('active');
+            });
+        });
+    </script>
+</body>
+</html>
