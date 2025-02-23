@@ -68,49 +68,36 @@ def student_required(view_func):
 
 
 from django.shortcuts import render
-from .models import Student_cgpa, Course
+from .models import Student_cgpa, LabBatchAssignment
 
-from django.shortcuts import render
-from .models import Student_cgpa
-
-
-@student_required  # Assuming you have a decorator to check if the user is logged in
+@student_required  # Ensure the user is logged in as a student.
 def student_dashboard(request):
     student_regno = request.session.get("student_regno")
-    # student_department = request.session.get('department')
-
     if not student_regno:
-        return render(
-            request,
-            "error.html",
-            {"message": "Student registration number not found in session."},
-        )
+        return render(request, "error.html", {"message": "Student registration number not found in session."})
 
     try:
-        # Retrieve student details from Student_cgpa using the registration number
-        student_details = Student_cgpa.objects.using("rit_cgpatrack").get(
-            reg_no=student_regno
-        )
+        # Retrieve the student's details from Student_cgpa.
+        # (Assuming this model is stored in the "rit_cgpatrack" database.)
+        student_details = Student_cgpa.objects.using("rit_cgpatrack").get(reg_no=student_regno)
     except Student_cgpa.DoesNotExist:
         return render(request, "error.html", {"message": "Student details not found."})
 
-    # Retrieve the department from the session
-    department = request.session.get("department", "Unknown Department")
-    # print(department)
+    # Retrieve the student's own lab batch assignment from the default database.
+    student_assignment = LabBatchAssignment.objects.filter(student=student_details).first()
 
-    # Extract batch information from the registration number
-    batch1 = student_regno[4:6]
-    batch = f"20{batch1}-20{int(batch1) + 4}"
-
-    # Determine entry status based on the last digit of the registration number
-    lat = int(student_regno[-3])
-    entry_status = "Lateral" if lat == 3 else "Transfer" if lat == 7 else "Regular"
+    lab_batch_members = None
+    lab_batch_no = None
+    if student_assignment:
+        lab_batch_no = student_assignment.lab_batch_no
+        # Retrieve all assignments in the same lab batch number.
+        lab_batch_members = LabBatchAssignment.objects.filter(lab_batch_no=lab_batch_no).order_by("created_at")
 
     context = {
         "student_details": student_details,
-        "department": department,
-        "batch": batch,
-        "entry_status": entry_status,
+        "student_assignment": student_assignment,
+        "lab_batch_no": lab_batch_no,
+        "lab_batch_members": lab_batch_members,
     }
     return render(request, "student/student_dashboard.html", context)
 
@@ -203,6 +190,7 @@ def apparatus_request(request):
         "ex_no_list": ex_no_list,
         "course_code_list": course_code_list,
         "practical_course_list": practical_course_list,
+        'student_department' : student_department
     }
     return render(request, "student/apparatus_request.html", context)
 
