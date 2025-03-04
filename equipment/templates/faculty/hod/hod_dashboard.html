@@ -1,0 +1,248 @@
+{% extends 'faculty/hod/base.html' %}
+
+{% block hod_dashboard %}
+<div class="container mt-4">
+    <h2 class="mb-4">Damaged Apparatus Requests</h2>
+
+    <!-- Table for Damaged Apparatus Requests -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th><i class="fas fa-user"></i> Student Reg No</th>
+                    <th><i class="fas fa-flask"></i> Lab Batch</th>
+                    <th><i class="fas fa-tools"></i> Apparatus</th>
+                    <th><i class="fas fa-users"></i> Lab Batch</th>
+                    <th><i class="fas fa-cogs"></i> Action</th>
+                    
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in grouped_requests %}
+                <tr>
+                    <td>{{ group.student__reg_no }}</td>
+                    <td>{{ group.lab_batch__lab_batch_no }}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm view-apparatus" data-toggle="modal" data-target="#apparatusModal{{ forloop.counter }}">
+                            <i class="fas fa-eye"></i> View Apparatus
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-info btn-sm view-lab-batch" data-toggle="modal" data-target="#labBatchModal{{ forloop.counter }}">
+                            <i class="fas fa-eye"></i> View Lab Batch Students
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-success btn-sm approve-btn" 
+        data-request-id="{{ group.student__reg_no }}_{{ group.lab_batch__lab_batch_no }}_{{ group.apparatus__ex_no }}">
+    <i class="fas fa-check"></i> Approve
+</button>
+
+                
+                    </td>
+                    
+                    
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No damaged apparatus requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modals for Apparatus Details -->
+{% for group in grouped_requests %}
+<div class="modal fade" id="apparatusModal{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="apparatusModalLabel{{ forloop.counter }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="apparatusModalLabel{{ forloop.counter }}">
+                    <i class="fas fa-tools"></i> Apparatus Details
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Normal Layout for Course, Experiment, Department, and Section -->
+                <div class="row mb-4">
+                    <!-- Course Code -->
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-book"></i> Course Code:</strong></p>
+                        <p>{{ group.lab_batch__course_code }}</p>
+                    </div>
+            
+                    <!-- Experiment No -->
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-flask"></i> Experiment No:</strong></p>
+                        <p>{{ group.apparatus__ex_no }}</p>
+                    </div>
+            
+                    <!-- Experiment Name -->
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-vial"></i> Experiment Name:</strong></p>
+                        <p>{{ group.apparatus__experiment_name }}</p>
+                    </div>
+            
+                    <!-- Department -->
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-building"></i> Department:</strong></p>
+                        <p>{{ group.apparatus__department }}</p>
+                    </div>
+            
+                    <!-- Section -->
+                    {% comment %} <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-users"></i> Section:</strong></p>
+                        <p>{{ group.student__section }}</p>
+                    </div> {% endcomment %}
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-users"></i> Lab Batch No:</strong></p>
+                        <p>{{ group.lab_batch__lab_batch_no }}</p>
+                    </div> 
+                    {% comment %} <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-users"></i> Section:</strong></p>
+                        <p>{{ student.section }}</p>
+                    </div> {% endcomment %}
+                </div>
+            
+                <!-- Table for Apparatus Details -->
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-vial"></i> Apparatus Name</th>
+                            <th><i class="fas fa-ruler-combined"></i> Range Specification</th>
+                            <th><i class="fas fa-boxes"></i> Quantity Available</th>
+                            <th><i class="fas fa-rupee-sign"></i> Fine Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in group.details %}
+                        <tr>
+                            <td>{{ detail.apparatus__apparatus_name }}</td>
+                            <td>{{ detail.apparatus__range_specification }}</td>
+                            <td>{{ detail.apparatus__quantity_available }}</td>
+                            <td>₹{{ detail.fine_amount }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            
+                <!-- Display Total Fine Amount -->
+                <div class="mt-4 text-right">
+                    <h5><strong>Total Fine Amount:</strong> ₹{{ group.total_fine_amount }}</h5>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Modals for Lab Batch Details -->
+{% for group in grouped_requests %}
+<div class="modal fade" id="labBatchModal{{ forloop.counter }}" tabindex="-1" role="dialog" aria-labelledby="labBatchModalLabel{{ forloop.counter }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="labBatchModalLabel{{ forloop.counter }}">
+                    <i class="fas fa-users"></i> Lab Batch Students
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong><i class="fas fa-book"></i> Course Code:</strong> {{ group.lab_batch__course_code }}</p>
+                        <p><strong><i class="fas fa-flask"></i> Experiment Name:</strong> {{ group.apparatus__experiment_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong><i class="fas fa-building"></i> Department:</strong> {{ group.apparatus__department }}</p>
+                        <p><strong><i class="fas fa-users"></i> Lab Batch No:</strong> {{ group.lab_batch__lab_batch_no }}</p>
+                    </div>
+                </div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-user"></i> Student ID</th>
+                            <th><i class="fas fa-user"></i> Student Name</th>
+                            {% comment %} <th><i class="fas fa-building"></i> Department</th> {% endcomment %}
+                            <th><i class="fas fa-users"></i> Section</th>
+                            {% comment %} <th><i class="fas fa-check"></i> Assessment</th> {% endcomment %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in group.lab_batch_students %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td>{{ student.student_name }}</td>
+                            {% comment %} <td>{{ student.department }}</td> {% endcomment %}
+                            <td>{{ student.section }}</td>
+                            {% comment %} <td>{{ student.assessment }}</td> {% endcomment %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Font Awesome CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<!-- AJAX for Approve Button -->
+<script>
+    $(".approve-btn").click(function () {
+        var requestId = $(this).data("request-id"); // Correctly fetch the data attribute
+        console.log("Request ID:", requestId); // Debugging log
+        
+        if (!requestId) {
+            alert("Error: Request ID is missing.");
+            return;
+        }
+    
+        $.ajax({
+            url: "{% url 'approve_request' %}",
+            type: "POST",
+            data: {
+                request_id: requestId,  // Ensure request_id is correctly passed
+                csrfmiddlewaretoken: "{{ csrf_token }}",
+            },
+            success: function (response) {
+                if (response.success) {
+                    alert("Request approved successfully!");
+                    location.reload(); // Reload to update UI
+                } else {
+                    alert("Failed to approve request: " + response.error);
+                }
+            },
+            error: function () {
+                alert("An error occurred while approving the request.");
+            }
+        });
+    });
+    
+    
+</script>
+{% endblock %}

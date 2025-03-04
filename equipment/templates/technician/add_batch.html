@@ -67,30 +67,31 @@
       {% csrf_token %}
       <h4 class="text-center mb-4">Experiment Entry Form</h4>
       <!-- Experiment and Course Code Fields -->
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="experiment_no" class="form-label">
-            <i class="fa-solid fa-flask me-1"></i> Experiment No.
-          </label>
-          <select class="form-control" id="experiment_no" name="experiment_no">
-            <option value="" selected disabled>Select Experiment No.</option>
-            {% for no in ex_no %}
-              <option value="{{ no }}">{{ no }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label for="course_code" class="form-label">
-            <i class="fa-solid fa-book me-1"></i> Course Code
-          </label>
-          <select class="form-control" id="course_code" name="course_code">
-            <option value="" selected disabled>Select Course Code</option>
-            {% for course in course_code %}
-              <option value="{{ course }}">{{ course }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
+     <!-- Experiment and Course Code Fields -->
+<div class="row mb-3">
+  <div class="col-md-6">
+    <label for="experiment_no" class="form-label">
+      <i class="fa-solid fa-flask me-1"></i> Experiment No.
+    </label>
+    <select class="form-control" id="experiment_no" name="experiment_no">
+      <option value="" selected disabled>Select Experiment No.</option>
+      {% for no in ex_no %}
+        <option value="{{ no }}">{{ no }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label for="course_code" class="form-label">
+      <i class="fa-solid fa-book me-1"></i> Course Code
+    </label>
+    <select class="form-control" id="course_code" name="course_code">
+      <option value="" selected disabled>Select Course Code</option>
+      {% for course in course_code %}
+        <option value="{{ course }}">{{ course }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
       <!-- Lab Batch and Assessment Fields -->
       <div class="row mb-3">
         <div class="col-md-6">

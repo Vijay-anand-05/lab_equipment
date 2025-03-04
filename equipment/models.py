@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.db import models
 
 ####################### student################
@@ -151,41 +152,37 @@ class LabExercise(models.Model):
         return f"{self.title} ({self.lab.name})"
 
 
-from django.db import models
-
-
 class Apparatus(models.Model):
     ex_no = models.CharField(max_length=50)
     course_code = models.CharField(max_length=50)
     practical_course = models.CharField(max_length=255)
     experiment_name = models.CharField(max_length=255)
-    regulation = models.CharField(max_length=50)  # FIX: `regulations` → `regulation`
+    regulation = models.CharField(max_length=50)
     batch = models.CharField(max_length=50)
-    semester = models.IntegerField()  # FIX: `sem` → `semester`
+    semester = models.IntegerField()
     apparatus_name = models.CharField(max_length=255)
     range_specification = models.CharField(max_length=100, blank=True, null=True)
     quantity_available = models.CharField(max_length=10)
     department = models.CharField(max_length=50)
+    remarks = models.TextField(blank=True, null=True)
+    fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
-    def __str__(self):
-        return f"{self.ex_no} - {self.course_code} - {self.experiment_name}"
-
+    class Meta:
+        db_table = 'equipment_apparatus'  # Specify the correct table name
 
 class LabBatchAssignment(models.Model):
+    
     """
     Stores the lab batch assignment details for a student.
     Now includes an 'assessment' field and also stores the student's
     department and section at the time of assignment.
     """
 
-    student = models.ForeignKey(
-        Student_cgpa, on_delete=models.CASCADE, related_name="lab_assignments"
-    )
+    student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE, related_name="lab_assignments")
     lab_batch_no = models.CharField(max_length=50)
     course_code = models.CharField(max_length=10)
     ex_no = models.CharField(max_length=50)
     assessment = models.CharField(max_length=100, blank=True, null=True)
-    # New fields for storing department and section information
     department = models.CharField(max_length=100, blank=True, null=True)
     section = models.CharField(max_length=10, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -196,3 +193,66 @@ class LabBatchAssignment(models.Model):
 
     def __str__(self):
         return f"{self.student.reg_no} - {self.student.student_name}"
+
+
+
+# Apparatus Request Model
+class ApparatusRequest(models.Model):
+    REQUEST_TYPES = [
+        ("Request", "Request"),
+        ("Return", "Return"),
+    ]
+    technician_staff_id = models.CharField(max_length=100, null=True, blank=True)
+    student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE)
+    lab_batch = models.ForeignKey(LabBatchAssignment, on_delete=models.CASCADE, null=True, blank=True)
+    apparatus = models.ForeignKey(Apparatus, on_delete=models.CASCADE, null=True, blank=True)
+    request_type = models.CharField(max_length=10, choices=REQUEST_TYPES, default="Request")
+    request_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("Pending", "Pending"),
+            ("Accepted", "Accepted"),
+            ("Rejected", "Rejected"),
+            ("Returned", "Returned"),
+            ("Damaged", "Damaged"),
+        ],
+        default="Pending",
+    )
+    technician = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    technician_remarks = models.TextField(blank=True, null=True)
+    accepted_message = models.TextField(blank=True, null=True)
+    return_date = models.DateTimeField(null=True, blank=True)
+    hod_approval = models.BooleanField(default=False)
+    damaged_apparatus = models.ManyToManyField(
+        "Apparatus",
+        through="ApparatusRequestDamage",  # Use the through model
+        related_name="damaged_requests",
+        blank=True,
+    )
+    course_code = models.CharField(max_length=20, blank=True, null=True)
+    verified = models.BooleanField(default=False)
+    verified_date = models.DateTimeField(null=True, blank=True)
+    damaged_apparatus = models.ManyToManyField(
+    "Apparatus",
+    through="ApparatusRequestDamage",  # Use the through model
+    related_name="damaged_requests",
+    blank=True,
+)
+
+    class Meta:
+        db_table = "apparatus_request"
+        ordering = ["-request_date"]
+
+    def __str__(self):
+        return f"{self.student.student_name} - {self.apparatus.apparatus_name} - {self.status} ({self.request_type})"
+
+class ApparatusRequestDamage(models.Model):
+    apparatus_request = models.ForeignKey(ApparatusRequest, on_delete=models.CASCADE)
+    apparatus = models.ForeignKey(Apparatus, on_delete=models.CASCADE)
+    fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    remarks = models.TextField(blank=True, null=True)
+    
+
+    class Meta:
+        db_table = "apparatus_request_damage"

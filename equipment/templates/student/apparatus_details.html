@@ -1,0 +1,27 @@
+{% extends 'student/base.html' %}
+
+
+{% block apparatus_details %}
+
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Apparatus Name</th>
+            <th>Range Specification</th>
+            <th>Quantity</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for apparatus in apparatus_list %}
+        <tr>
+            <td>{{ apparatus.apparatus_name }}</td>
+            <td>{{ apparatus.range_specification }}</td>
+            <td>{{ apparatus.quantity_requested }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock apparatus_details %}
+    

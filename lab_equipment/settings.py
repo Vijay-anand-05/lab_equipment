@@ -28,6 +28,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
+
+
 
 # Application definition
 
@@ -38,8 +42,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     'equipment',
 ]
+
+AUTHENTICATION_BACKENDS = ["equipment.backends.CustomUserBackend"]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,9 +83,9 @@ WSGI_APPLICATION = 'lab_equipment.wsgi.application'
 
 
 
-LOGIN_URL = 'technician_login'
+# LOGIN_URL = 'technician_login'
 
-
+# \
 
 
 # Database
@@ -120,6 +128,8 @@ DATABASES = {
         'PORT': '3306',
     },
 }
+
+
 
 from django.contrib.messages import constants as messages # type: ignore
 

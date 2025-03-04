@@ -1,0 +1,163 @@
+{% extends 'technician/base.html' %}
+
+{% block damaged_apparatus %}
+<div class="container mt-4">
+    <!-- Flash Messages Section -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+            <i class="{% if message.tags == 'success' %}fas fa-check-circle{% elif message.tags == 'error' %}fas fa-times-circle{% else %}fas fa-info-circle{% endif %}"></i>
+            <strong>{{ message }}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Flash Messages Animation -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Fade-in animation
+            $(".alert").hide().fadeIn(1000);
+
+            // Auto-close messages after 5 seconds
+            setTimeout(function () {
+                $(".alert").fadeOut(500, function () {
+                    $(this).remove();
+                });
+            }, 5000);
+        });
+    </script>
+
+    <!-- Page Title -->
+    <h2 class="mb-4">Damaged Apparatus Requests</h2>
+
+    <!-- Table Section -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th><i class="fas fa-user"></i> Student Reg No</th>
+                    <th><i class="fas fa-book"></i> Course Code</th>
+                    <th><i class="fas fa-flask"></i> Experiment No</th>
+                    <th><i class="fas fa-building"></i> Department</th>
+                    <th><i class="fas fa-users"></i> Lab Batch No</th>
+                    <th><i class="fas fa-cubes"></i> Apparatus Count</th>
+                    <th><i class="fas fa-cogs"></i> Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in damaged_apparatus_requests %}
+                <tr>
+                    <td>{{ group.student__reg_no }}</td>
+                    <td>{{ group.lab_batch__course_code }}</td>
+                    <td>{{ group.apparatus__ex_no }}</td>
+                    <td>{{ group.apparatus__department }}</td>
+                    <td>{{ group.lab_batch__lab_batch_no }}</td>
+                    <td>{{ group.apparatus_count }}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#detailsModal{{ group.id }}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modals for Each Request -->
+{% for group in damaged_apparatus_requests %}
+<div class="modal fade" id="detailsModal{{ group.id }}" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel{{ group.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel{{ group.id }}">
+                    Apparatus Details for {{ group.student__reg_no }} - {{ group.lab_batch__course_code }}
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                
+
+                <form method="post" action="{% url 'damaged_apparatus' %}">
+                    {% csrf_token %}
+                    <p><strong>DEBUG:</strong> Request ID for group: {{ group.request_id }}</p>
+
+                    <input type="hidden" name="return_request_id" value="{{ group.request_id }}">
+                
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th><i class="fas fa-check-square"></i> Select</th>
+                                <th><i class="fas fa-vial"></i> Apparatus Name</th>
+                                <th><i class="fas fa-ruler-combined"></i> Range Specification</th>
+                                <th><i class="fas fa-boxes"></i> Quantity Available</th>
+                                <th><i class="fas fa-rupee-sign"></i> Fine Amount</th>
+                                <th><i class="fas fa-comment"></i> Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for apparatus in group.apparatus_list %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="selected_apparatus" value="{{ apparatus.id }}">
+                                </td>
+                                <td>{{ apparatus.apparatus_name }}</td>
+                                <td>{{ apparatus.range_specification }}</td>
+                                <td>{{ apparatus.quantity_available }}</td>
+                                <td>
+                                    <input type="number" class="form-control" name="fine_amount_{{ apparatus.id }}" min="0" step="0.01">
+                                </td>
+                                <td>
+                                    <textarea class="form-control" name="remarks_{{ apparatus.id }}">{{ apparatus.remarks }}</textarea>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                
+                    <div class="form-group">
+                        <label for="remarks{{ group.id }}"><i class="fas fa-comment"></i> General Remarks</label>
+                        <textarea class="form-control" id="remarks{{ group.id }}" name="remarks"></textarea>
+                    </div>
+                
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Submit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("form").forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                let formData = new FormData(form);
+                console.log("Form Data:");
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+            });
+        });
+    });
+</script>
+
+<!-- Font Awesome CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock damaged_apparatus %}
