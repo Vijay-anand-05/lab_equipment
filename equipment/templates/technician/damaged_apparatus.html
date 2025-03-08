@@ -32,6 +32,77 @@
             }, 5000);
         });
     </script>
+    <form method="get" class="mb-4">
+        <div class="row">
+            <!-- Department Filter -->
+            <div class="col-md-3">
+                <label for="department"><i class="fas fa-building"></i> Department:</label>
+                <select name="department" id="department" class="form-control">
+                    <option value="">All</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+    
+            <!-- Course Code Filter -->
+            <div class="col-md-3">
+                <label for="course_code"><i class="fas fa-book"></i> Course Code:</label>
+                <select name="course_code" id="course_code" class="form-control">
+                    <option value="">All</option>
+                    {% for course in course_codes %}
+                    <option value="{{ course }}" {% if request.GET.course_code == course %}selected{% endif %}>{{ course }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+    
+            <!-- Approval Status Filter -->
+            <div class="col-md-3">
+                <label for="approval_status"><i class="fas fa-check-circle"></i> Approval Status:</label>
+                <select name="approval_status" id="approval_status" class="form-control">
+                    <option value="">All</option>
+                    <option value="approved" {% if request.GET.approval_status == "approved" %}selected{% endif %}>Approved</option>
+                    <option value="not_approved" {% if request.GET.approval_status == "not_approved" %}selected{% endif %}>Not Approved</option>
+                </select>
+            </div>
+    
+            <!-- Filter Button with Animation -->
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary btn-block filter-button">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </div>
+    </form>
+    
+    <!-- Add CSS for Animation -->
+    <style>
+        /* Button Animation */
+        .filter-button {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+    
+        .filter-button:hover {
+            transform: scale(1.05); /* Slightly enlarge the button */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add shadow */
+        }
+    
+        .filter-button:active {
+            transform: scale(0.95); /* Slightly shrink the button when clicked */
+        }
+    
+        /* Icon Animation */
+        .filter-button i {
+            transition: transform 0.2s ease;
+        }
+    
+        .filter-button:hover i {
+            transform: rotate(15deg); /* Rotate the filter icon on hover */
+        }
+    </style>
+    
+    <!-- FontAwesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <!-- Page Title -->
     <h2 class="mb-4">Damaged Apparatus Requests</h2>
@@ -41,13 +112,16 @@
         <table class="table table-bordered table-hover">
             <thead class="thead-dark">
                 <tr>
-                    <th><i class="fas fa-user"></i> Student Reg No</th>
-                    <th><i class="fas fa-book"></i> Course Code</th>
-                    <th><i class="fas fa-flask"></i> Experiment No</th>
-                    <th><i class="fas fa-building"></i> Department</th>
-                    <th><i class="fas fa-users"></i> Lab Batch No</th>
-                    <th><i class="fas fa-cubes"></i> Apparatus Count</th>
-                    <th><i class="fas fa-cogs"></i> Action</th>
+                    <th>Student Reg No</th>
+                    <th>Course Code</th>
+                    <th>Experiment No</th>
+                    <th>Department</th>
+                    <th>Lab Batch No</th>
+                    <th>HOD Approved</th>
+                    <th>Action</th>
+                    {% if request.GET.approval_status == "approved" %}
+                    <th>Payment Verification</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -58,12 +132,38 @@
                     <td>{{ group.apparatus__ex_no }}</td>
                     <td>{{ group.apparatus__department }}</td>
                     <td>{{ group.lab_batch__lab_batch_no }}</td>
-                    <td>{{ group.apparatus_count }}</td>
+                    <td>{% if group.hod_approval %}Approved{% else %}Not Approved{% endif %}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#detailsModal{{ group.id }}">
                             <i class="fas fa-eye"></i> View
                         </button>
                     </td>
+                    {% if request.GET.approval_status == "approved" or group.verified %}
+                        <td>
+                            <form method="post" action="{% url 'damaged_apparatus' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="return_request_id" value="{{ group.request_id }}">
+                                <input type="hidden" name="action" value="verify">
+                                <button type="submit" class="btn btn-success btn-sm" {% if group.verified %}disabled{% endif %}>
+                                    <i class="fas fa-check"></i> Verify
+                                </button>
+                            </form>
+
+                            <form method="post" action="{% url 'damaged_apparatus' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="return_request_id" value="{{ group.request_id }}">
+                                <input type="hidden" name="action" value="not_verify">
+                                <button type="submit" class="btn btn-danger btn-sm" {% if not group.verified %}disabled{% endif %}>
+                                    <i class="fas fa-times"></i> Not Verify
+                                </button>
+                            </form>
+                        </td>
+                    {% endif %}
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No Damaged Apparatus found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -85,12 +185,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                
-
                 <form method="post" action="{% url 'damaged_apparatus' %}">
                     {% csrf_token %}
-                    <p><strong>DEBUG:</strong> Request ID for group: {{ group.request_id }}</p>
-
                     <input type="hidden" name="return_request_id" value="{{ group.request_id }}">
                 
                     <table class="table table-bordered">
@@ -114,11 +210,13 @@
                                 <td>{{ apparatus.range_specification }}</td>
                                 <td>{{ apparatus.quantity_available }}</td>
                                 <td>
-                                    <input type="number" class="form-control" name="fine_amount_{{ apparatus.id }}" min="0" step="0.01">
+                                    <!-- Display fine amount if it exists, otherwise empty field -->
+                                    <input type="number" class="form-control" name="fine_amount_{{ apparatus.id }}" min="0" step="0.01" value="{% if apparatus.fine_amount %}{{ apparatus.fine_amount }}{% else %}0.00{% endif %}">
                                 </td>
                                 <td>
                                     <textarea class="form-control" name="remarks_{{ apparatus.id }}">{{ apparatus.remarks }}</textarea>
                                 </td>
+                                
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -126,7 +224,8 @@
                 
                     <div class="form-group">
                         <label for="remarks{{ group.id }}"><i class="fas fa-comment"></i> General Remarks</label>
-                        <textarea class="form-control" id="remarks{{ group.id }}" name="remarks"></textarea>
+                        <textarea class="form-control" id="remarks{{ group.id }}" name="remarks">{{ group.technician_remarks }}</textarea>
+
                     </div>
                 
                     <div class="modal-footer">

@@ -78,12 +78,12 @@
         </div>
         <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-                <a href="{% url 'technician_dashboard' %}" class="nav-link sidebar-link ">
+                <a href="{% url 'technician_dashboard' %}" class="nav-link sidebar-link {% if page_name == 'technician_dashboard' %}active{% endif %}">
                     <i class="fa fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'damaged_apparatus' %}" class="nav-link sidebar-link">
+                <a href="{% url 'damaged_apparatus' %}" class="nav-link sidebar-link {% if page_name == 'damaged_apparatus' %}active{% endif %}">
                     <i class="fas fa-exclamation-triangle mr-3"></i> Damaged Apparatus
                 </a>
             </li>

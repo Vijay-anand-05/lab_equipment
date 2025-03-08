@@ -45,6 +45,7 @@ urlpatterns = [
     
     # path('submit-damaged-apparatus/<int:return_request_id>/', views.submit_damaged_apparatus, name='submit_damaged_apparatus'),
     path("technician/payment_status/", views.payment_status, name = "payment_status"),
+    path("payment-receipt/<int:request_id>/", views.generate_payment_pdf, name="generate_payment_pdf"),
     
 
 

@@ -680,7 +680,7 @@ def technician_dashboard(request):
 
     def sorted_list(qs_values):
         return sorted(list(set(qs_values)))
-
+    page_name = "technician_dashboard"
     context = {
         "grouped_requests": grouped_list,
         "status_filter": status_filter,
@@ -700,9 +700,10 @@ def technician_dashboard(request):
         "experiment_no_list": sorted_list(
             ApparatusRequest.objects.values_list("apparatus__ex_no", flat=True)
         ),
+        "page_name" : page_name
     }
-
-    return render(request, "technician/technician_dashboard.html", context)
+    
+    return render(request, "technician/technician_dashboard.html", context, )
 
 
 
@@ -1411,144 +1412,105 @@ from django.http import HttpResponse
 from django.db.models import Count
 from .models import User, ApparatusRequest, Apparatus  # Ensure correct imports
 
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.utils.timezone import now
+from django.db.models import Count
+from .models import ApparatusRequest, ApparatusRequestDamage, LabBatchAssignment, LabExercise
+# from .decorators import technician_required
+from django.http import HttpResponse
+
+from django.utils.timezone import now
+
 @technician_required
 def damaged_apparatus(request):
+    page_name = "damaged_apparatus"
+    
     if request.method == "POST":
-        print("🚀 FORM DATA RECEIVED:", request.POST)  # Debug
-        print(f"DEBUG: User: {request.user}, Authenticated: {request.user.is_authenticated}")
-
-        # Get return request ID from the form
         return_request_id = request.POST.get("return_request_id")
-        print("Return Request ID:", return_request_id)
-
+        action = request.POST.get("action")  # Get the action (verify/not_verify)
+        
         if not return_request_id:
             messages.error(request, "Invalid request ID.")
             return redirect("damaged_apparatus")
 
-        # Ensure return_request exists
-        return_request = get_object_or_404(ApparatusRequest, id=return_request_id)
+        first_request = get_object_or_404(ApparatusRequest, id=return_request_id)
 
-        # Get technician from session
-        staff_id = request.session.get("user_id")
+        # Get all requests in the same group
+        related_requests = ApparatusRequest.objects.filter(
+            student__reg_no=first_request.student_id,
+            lab_batch__course_code=first_request.lab_batch.course_code,
+            apparatus__ex_no=first_request.apparatus.ex_no,
+            apparatus__department=first_request.apparatus.department,
+            lab_batch__lab_batch_no=first_request.lab_batch.lab_batch_no,
+            request_date=first_request.request_date
+        )
 
-        if not staff_id:
-            return HttpResponse("Unauthorized", status=401)  # Handle unauthorized access
-
-        try:
-            technician = User.objects.using("rit_e_approval").filter(staff_id=staff_id).first()
-        except User.DoesNotExist:
-            return HttpResponse("User not found", status=404)  # Handle missing user
-
-        # Get selected apparatus IDs
-        selected_apparatus_ids = [aid for aid in request.POST.getlist("selected_apparatus") if aid]
-        print("Selected Apparatus IDs:", selected_apparatus_ids)
-
-        general_remarks = request.POST.get("remarks", "")  # General remarks (optional)
-
-        if selected_apparatus_ids:
-            return_request.damaged_apparatus.clear()  # Clear previous damaged apparatus
-
-            for apparatus_id in selected_apparatus_ids:
-                try:
-                    selected_apparatus = get_object_or_404(Apparatus, id=int(apparatus_id))
-                except ValueError:
-                    messages.error(request, f"Invalid apparatus ID: {apparatus_id}")
-                    return redirect("damaged_apparatus")
-
-                # Get the fine amount for this apparatus
-                fine_amount = request.POST.get(f"fine_amount_{apparatus_id}", "0")
-                print("Fine amount:", fine_amount)
-                try:
-                    fine_amount = float(fine_amount)  # Convert to float
-                except ValueError:
-                    messages.error(request, f"Invalid fine amount for apparatus {selected_apparatus.apparatus_name}.")
-                    return redirect("damaged_apparatus")
-
-                # Get the remarks for this apparatus
-                apparatus_remarks = request.POST.get(f"remarks_{apparatus_id}", "")
-
-                # Save the fine amount and remarks in the through model
-                ApparatusRequestDamage.objects.create(
-                    apparatus_request=return_request,
-                    apparatus=selected_apparatus,
-                    fine_amount=fine_amount,
-                    remarks=apparatus_remarks,
-                )
-
-                # Save the fine amount to the Apparatus table (optional)
-                selected_apparatus.fine_amount = fine_amount
-                selected_apparatus.save()
-
-            # ✅ Store technician ID
-            return_request.technician_staff_id = technician.staff_id  
-            return_request.hod_approval = False  # Waiting for HOD approval
-            return_request.request_type = "Return"
-            return_request.technician_remarks = general_remarks  # Save general remarks
-            return_request.save()
-
-            messages.success(request, "Request sent to HOD for approval!")
-        else:
-            messages.error(request, "Please select at least one apparatus!")
-
+        if action == "verify":
+            related_requests.update(verified=True, verified_date=now())
+            messages.success(request, "All requests in this group successfully verified.")
+        elif action == "not_verify":
+            related_requests.update(verified=False, verified_date=None)
+            messages.warning(request, "Verification removed for all requests in this group.")
+        
         return redirect("damaged_apparatus")
 
-    # Fetch damaged apparatus requests
-    qs = ApparatusRequest.objects.filter(status="Damaged")
+    # Filtering logic
+    department = request.GET.get("department")
+    course_code = request.GET.get("course_code")
+    approval_status = request.GET.get("approval_status")
 
+    qs = ApparatusRequest.objects.filter(status="Damaged")
+    if department:
+        qs = qs.filter(apparatus__department=department)
+    if course_code:
+        qs = qs.filter(lab_batch__course_code=course_code)
+    if approval_status:
+        qs = qs.filter(hod_approval=(approval_status == "approved"))
+
+    grouped_list = []
     grouped = (
         qs.values(
-            "student__reg_no",
-            "lab_batch__course_code",
-            "apparatus__ex_no",
-            "apparatus__department",
-            "lab_batch__lab_batch_no",
-            "request_date",
+            "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
+            "lab_batch__lab_batch_no", "request_date", "hod_approval"
         )
         .annotate(apparatus_count=Count("id"))
         .order_by("student__reg_no", "lab_batch__lab_batch_no", "request_date")
     )
-
-    grouped_list = []
+    
     for group in grouped:
-        student_reg = group["student__reg_no"]
-        course = group["lab_batch__course_code"]
-        exp_no = group["apparatus__ex_no"]
-        dept = group["apparatus__department"]
-        lab_batch = group["lab_batch__lab_batch_no"]
-        request_date = group["request_date"]
-
         details_qs = ApparatusRequest.objects.filter(
-            student__reg_no=student_reg,
-            lab_batch__course_code=course,
-            apparatus__ex_no=exp_no,
-            apparatus__department=dept,
-            lab_batch__lab_batch_no=lab_batch,
-            request_date=request_date,
+            student__reg_no=group["student__reg_no"], lab_batch__course_code=group["lab_batch__course_code"],
+            apparatus__ex_no=group["apparatus__ex_no"], apparatus__department=group["apparatus__department"],
+            lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"], request_date=group["request_date"]
         )
         first_request = details_qs.first()
         group["request_id"] = first_request.id if first_request else None
-
-        apparatus_list = []
-        for detail in details_qs:
-            if detail.apparatus:  # Ensure apparatus exists
-                apparatus_list.append({
-                    "id": detail.apparatus.id,  # Include the apparatus ID
-                    "apparatus_name": detail.apparatus.apparatus_name,
-                    "range_specification": detail.apparatus.range_specification,
-                    "quantity_available": detail.apparatus.quantity_available,
-                    "fine_amount": detail.apparatus.fine_amount if detail.apparatus.fine_amount else 0,  # Include fine amount
-                    "remarks": detail.apparatus.remarks if detail.apparatus.remarks else "",  # Include existing remarks
-                })
-
-        group["apparatus_list"] = apparatus_list
+        group["technician_remarks"] = first_request.technician_remarks if first_request else ""
+        group["verified"] = all(req.verified for req in details_qs)  # Check if all items in group are verified
+        group["apparatus_list"] = [
+            {
+                "id": detail.apparatus.id,
+                "apparatus_name": detail.apparatus.apparatus_name,
+                "range_specification": detail.apparatus.range_specification,
+                "quantity_available": detail.apparatus.quantity_available,
+                "fine_amount": detail.apparatus.fine_amount or 0,
+                "remarks": detail.apparatus.remarks or "",
+            }
+            for detail in details_qs if detail.apparatus
+        ]
         grouped_list.append(group)
+
+    departments = LabBatchAssignment.objects.values_list("department", flat=True).distinct().order_by("department")
+    course_codes = LabExercise.objects.values_list("course_code", flat=True).distinct().order_by("course_code")
 
     context = {
         "damaged_apparatus_requests": grouped_list,
+        "departments": departments,
+        "course_codes": course_codes,
+        "page_name": page_name
     }
-
     return render(request, "technician/damaged_apparatus.html", context)
-
 
 
 # def submit_damaged_apparatus(request, return_request_id):
@@ -1583,11 +1545,237 @@ def damaged_apparatus(request):
 
 
 
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
+from django.template.loader import get_template
+# from xhtml2pdf import pisa
+from django.db.models import Count, Sum
+from .models import LabBatchAssignment, LabExercise, ApparatusRequest, ApparatusRequestDamage
+
 def payment_status(request):
-    return render(request, "technician/payment_status.html")
+    # Get filter values from request
+    department = request.GET.get("department")
+    course_code = request.GET.get("course_code")
+    payment_status = request.GET.get("payment_status")  # Paid or Not Paid
+
+    # Base queryset for damaged apparatus requests
+    qs = ApparatusRequest.objects.filter(status="Damaged")
+
+    if department:
+        qs = qs.filter(apparatus__department=department)
+    if course_code:
+        qs = qs.filter(lab_batch__course_code=course_code)
+    if payment_status:
+        qs = qs.filter(verified=(payment_status == "paid"))  # Using verified field
+
+    grouped_list = []
+    grouped = (
+        qs.values(
+            "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
+            "lab_batch__lab_batch_no", "status", "verified"
+        )
+        .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))  # Summing fine amounts
+        .order_by("student__reg_no", "lab_batch__lab_batch_no")
+    )
+
+    for group in grouped:
+        details_qs = ApparatusRequest.objects.filter(
+            student__reg_no=group["student__reg_no"],
+            lab_batch__course_code=group["lab_batch__course_code"],
+            apparatus__ex_no=group["apparatus__ex_no"],
+            apparatus__department=group["apparatus__department"],
+            lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"],
+        )
+        
+        first_request = details_qs.first()
+        group["request_id"] = first_request.id if first_request else None
+        group["remarks"] = first_request.technician_remarks if first_request else ""
+        group["apparatus_list"] = [
+            {
+                "id": detail.apparatus.id,
+                "apparatus_name": detail.apparatus.apparatus_name,
+                "fine_amount": detail.apparatusrequestdamage_set.first().fine_amount if detail.apparatusrequestdamage_set.exists() else 0,
+                "remarks": detail.apparatusrequestdamage_set.first().remarks if detail.apparatusrequestdamage_set.exists() else "",
+            }
+            for detail in details_qs if detail.apparatus
+        ]
+        grouped_list.append(group)
+
+    departments = LabBatchAssignment.objects.values_list("department", flat=True).distinct().order_by("department")
+    course_codes = LabExercise.objects.values_list("course_code", flat=True).distinct().order_by("course_code")
+
+    context = {
+        "departments": departments,
+        "course_codes": course_codes,
+        "damaged_apparatus_requests": grouped_list,
+    }
+
+    return render(request, "technician/payment_status.html", context)
 
 
+import os
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from django.conf import settings
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib.utils import ImageReader
 
+def generate_payment_pdf(request, request_id):
+    apparatus_request = get_object_or_404(ApparatusRequest, id=request_id)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="payment_receipt.pdf"'
+
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    # Load Logo
+    logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "image.png")
+    if os.path.exists(logo_path):
+        logo = ImageReader(logo_path)
+        p.drawImage(logo, 50, height - 100, width=80, height=50, mask='auto')
+
+    # Title
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(width / 2, height - 120, "Fine Payment Confirmation – Lab Equipment")
+
+    # Line separator
+    p.setStrokeColor(colors.black)
+    p.line(50, height - 130, width - 50, height - 130)
+
+    # Define text positions
+    y_position = height - 180
+    row_height = 25
+
+    # Helper function to draw rows (one field per line)
+    def draw_row(label, value, y_offset):
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_offset, label)
+        p.setFont("Helvetica", 12)
+        p.drawString(200, y_offset, str(value))  # Adjust the x-position for alignment
+        return y_offset - row_height
+
+    # Display Experiment Name
+    y_position = draw_row("Experiment Name:", apparatus_request.apparatus.experiment_name, y_position)
+
+    # Display Practical Course
+    y_position = draw_row("Practical Course:", apparatus_request.apparatus.practical_course, y_position)
+
+    # Display Payment Verification
+    payment_verified = "Yes" if apparatus_request.verified else "No"
+    y_position = draw_row("Payment Verified:", payment_verified, y_position)
+
+    # Display Date
+    y_position = draw_row("Date:", apparatus_request.verified_date, y_position)
+
+    # Display Course Code
+    y_position = draw_row("Course Code:", apparatus_request.course_code, y_position)
+
+    # Display Experiment No
+    y_position = draw_row("Experiment No:", apparatus_request.lab_batch.ex_no, y_position)
+
+    # Display Department
+    y_position = draw_row("Department:", apparatus_request.apparatus.department, y_position)
+
+    # Display Lab Batch No
+    y_position = draw_row("Lab Batch No:", apparatus_request.lab_batch.lab_batch_no, y_position)
+
+    # Display Status
+    y_position = draw_row("Status:", apparatus_request.status, y_position)
+
+    # Apparatus Details Table
+    table_data = [["Apparatus Name", "Fine Amount (INR)", "Remarks"]]
+    total_fine = 0
+
+    for damage in apparatus_request.apparatusrequestdamage_set.all():
+        fine_amount = damage.fine_amount
+        total_fine += fine_amount
+        table_data.append([
+            damage.apparatus.apparatus_name,
+            f"₹ {fine_amount}",
+            damage.remarks
+        ])
+
+    # Add Total Fine Amount row
+    table_data.append(["", "Total: ₹ {}".format(total_fine), ""])
+
+    # Create and Style Table
+    table = Table(table_data, colWidths=[200, 100, 200])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ("BACKGROUND", (1, len(table_data) - 1), (1, len(table_data) - 1), colors.lightgrey),
+        ("FONTNAME", (1, len(table_data) - 1), (1, len(table_data) - 1), "Helvetica-Bold")
+    ]))
+
+    # Draw Table
+    y_position -= 50
+    table.wrapOn(p, width, height)
+    table.drawOn(p, 50, y_position - len(table_data) * 20)
+
+    # Fetch Lab Batch Students
+    lab_batch_assignments = LabBatchAssignment.objects.filter(
+        course_code=apparatus_request.course_code,
+        lab_batch_no=apparatus_request.lab_batch.lab_batch_no,
+        ex_no=apparatus_request.lab_batch.ex_no,
+    )
+
+    students = Student_cgpa.objects.using("rit_cgpatrack").all()
+    student_dict = {student.reg_no: student.student_name for student in students}
+
+    lab_batch_students = []
+    for assignment in lab_batch_assignments:
+        student_id = assignment.student_id
+        student_name = student_dict.get(student_id, "Unknown")
+        lab_batch_students.append({
+            "student_id": student_id,
+            "student_name": student_name,
+            "department": assignment.department,
+            "section": assignment.section,
+            "assessment": assignment.assessment,
+        })
+
+    # Lab Batch Students Table
+    y_position -= len(table_data) * 20 + 50  # Adjust position after the previous table
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(50, y_position, "Lab Batch Students:")
+
+    y_position -= 20
+    student_table_data = [["Student ID", "Student Name", "Department", "Section", "Assessment"]]
+    for student in lab_batch_students:
+        student_table_data.append([
+            student["student_id"],
+            student["student_name"],
+            student["department"],
+            student["section"],
+            student["assessment"],
+        ])
+
+    student_table = Table(student_table_data, colWidths=[100, 150, 100, 80, 100])
+    student_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+    ]))
+
+    student_table.wrapOn(p, width, height)
+    student_table.drawOn(p, 50, y_position - len(student_table_data) * 20)
+
+    # Finalize
+    p.showPage()
+    p.save()
+
+    return response
 
 
 

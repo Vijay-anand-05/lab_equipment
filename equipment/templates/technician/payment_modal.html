@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { text-align: center; }
+        .receipt { margin: 20px; }
+        .receipt div { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <h1>Payment Receipt</h1>
+        <div>Date: {{ verified_date }}</div>
+        <div>Student Name: {{ student_name }}</div>
+        <div>Student Reg No: {{ student_reg_no }}</div>
+        <div>Course Code: {{ course_code }}</div>
+        <div>Experiment No: {{ experiment_no }}</div>
+        <div>Department: {{ department }}</div>
+        <div>Lab Batch No: {{ lab_batch_no }}</div>
+        <div>Total Fine Amount: INR {{ total_fine }}</div>
+        <div>Payment Status: {{ status }}</div>
+    </div>
+</body>
+</html>

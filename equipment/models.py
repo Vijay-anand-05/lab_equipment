@@ -256,3 +256,7 @@ class ApparatusRequestDamage(models.Model):
 
     class Meta:
         db_table = "apparatus_request_damage"
+        
+class regulation_master(models.Model):
+    regulation_year = models.IntegerField()
+    regulation_name = models.CharField(max_length=100)
