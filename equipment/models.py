@@ -111,7 +111,7 @@ class Course(models.Model):
     # degree = models.CharField(max_length=10)
     department = models.CharField(max_length=50)
     semester = models.IntegerField()
-    course_code = models.CharField(max_length=10, unique=True)
+    course_code = models.CharField(max_length=10)
     course_title = models.CharField(max_length=255)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     subject_type = models.ForeignKey(SubjectType, on_delete=models.CASCADE)
@@ -207,7 +207,7 @@ class ApparatusRequest(models.Model):
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     technician_remarks = models.TextField(null=True, blank=True)
     technician_staff_id = models.CharField(max_length=100, null=True, blank=True)
-    student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE, db_constraint=False)
     lab_batch = models.ForeignKey(LabBatchAssignment, on_delete=models.CASCADE, null=True, blank=True)
     apparatus = models.ForeignKey(Apparatus, on_delete=models.CASCADE, null=True, blank=True)
     request_type = models.CharField(max_length=10, choices=REQUEST_TYPES, default="Request")
@@ -266,20 +266,32 @@ class regulation_master(models.Model):
     
     
     
-from django.db import models
-
 class Payment(models.Model):
     student = models.ForeignKey(
-        Student_cgpa,  # Ensure this model exists in your project
+        Student_cgpa,  
         on_delete=models.CASCADE,
-        related_name="payments"  # Helps with reverse lookups
+        related_name="payments", db_constraint=False
     )
-    amount = models.DecimalField(max_digits=10, decimal_places=2)  # Payment amount
-    payment_date = models.DateTimeField(auto_now_add=True)
-    payment_proof = models.ImageField(upload_to="payment_proofs/", blank=True, null=True)  # Uploaded Payment Proof
-    
+    lab_batch = models.ForeignKey(
+        LabBatchAssignment,
+        on_delete=models.CASCADE,
+        related_name="batch_payments",
+        null=True,
+        blank=True,
+    )  # Track which lab batch the student belongs to
+
+    damaged_apparatus = models.ManyToManyField(
+        ApparatusRequestDamage,
+        related_name="damage_payments",
+        blank=True
+    )  # Track which damaged apparatus items are being paid for
+
+    payment_proof = models.ImageField(upload_to="payment_proofs/", blank=True, null=True)  # Student uploads payment receipt
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp when proof is uploaded
+
     class Meta:
-        db_table = "payment_upload"  # Explicitly set table name in DB
+        db_table = "payment_upload"  
 
     def __str__(self):
-        return f"{self.student.student_name} - {self.amount}"
+        return f"{self.student.student_name} - Lab Batch: {self.lab_batch.lab_batch_no} - Payment Proof Uploaded"

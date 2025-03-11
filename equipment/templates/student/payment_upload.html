@@ -5,9 +5,12 @@
 
 <!-- Animate.css for Awesome Animations -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<!-- Bootstrap JS (Required for Modal) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- Bootstrap Modal Styles -->
 <style>
-    /* Smooth fade-in animation */
+    /* Fade-in animation */
     .fade-in {
         animation: fadeIn 1s ease-in-out;
     }
@@ -45,6 +48,33 @@
         0% { box-shadow: 0px 0px 10px rgba(0, 123, 255, 0.3); }
         100% { box-shadow: 0px 0px 25px rgba(0, 123, 255, 0.7); }
     }
+
+    /* Stylish Mobile Upload Button */
+    .mobile-upload-btn {
+        display: inline-block;
+        margin: 10px 0;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+    .mobile-upload-btn:hover {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: white;
+    }
+    .mobile-upload-btn i {
+        margin-right: 8px;
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        border-radius: 10px;
+        box-shadow: 0px 0px 30px rgba(0, 123, 255, 0.5);
+    }
 </style>
 
 <div class="container mt-5">
@@ -57,20 +87,27 @@
         <div class="col-md-5 text-center fade-in animate__animated animate__zoomIn">
             <h4 class="mb-3"><i class="bi bi-qr-code"></i> Scan QR Code to Pay</h4>
             <img src="{% static 'images/payment_qr.png' %}" class="img-fluid shadow rounded qr-glow" alt="Payment QR Code" style="max-width: 300px;">
+
+            <!-- Button to Trigger Upload Modal (Fixed `data-bs-target`) -->
+            <button class="mobile-upload-btn" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="fas fa-camera"></i> Upload from Mobile
+            </button>
         </div>
 
         <!-- Upload Payment Proof -->
         <div class="col-md-5">
             <div class="card p-4 shadow-lg fade-in animate__animated animate__fadeInUp">
                 <h5 class="mb-3"><i class="bi bi-cloud-upload"></i> Upload Payment Proof</h5>
-                <form method="POST" enctype="multipart/form-data">
+
+                <!-- Upload Form -->
+                <form method="POST" enctype="multipart/form-data" id="upload-form">
                     {% csrf_token %}
                     
                     <div class="mb-3">
                         <label for="id_payment_proof" class="form-label">
                             <i class="bi bi-file-earmark-image"></i> Select Payment Proof:
                         </label>
-                        <input type="file" name="payment_proof" class="form-control" id="id_payment_proof">
+                        <input type="file" name="payment_proof" class="form-control" id="id_payment_proof" accept="image/*">
                     </div>
 
                     <button type="submit" class="btn btn-success w-100 btn-glow">
@@ -88,5 +125,34 @@
         </div>
     </div>
 </div>
+
+<!-- Modal for Uploading Payment Proof -->
+<!-- Modal for Displaying QR Code -->
+<!-- Modal for Payment QR Code -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">
+                    <i class="bi bi-qr-code"></i> Payment QR Code
+                </h5>
+                <button type="button" class="btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i> <!-- Font Awesome close icon -->
+                </button>
+                
+            </div>
+            <div class="modal-body text-center">
+                <p>Scan this QR code to complete your payment:</p>
+                <img src="data:image/png;base64,{{ qr_base64 }}" class="img-fluid shadow rounded qr-glow" alt="Payment QR Code" style="max-width: 300px;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Bundle with Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
 
 {% endblock %}

@@ -15,6 +15,7 @@ urlpatterns = [
     path('get_apparatus_details/', views.get_apparatus_details, name='get_apparatus_details'),
     path('student/payment_upload/', views.payment_upload, name='payment_upload'),
     
+    path('student/qr_code/', views.upload_qr, name='qr_code'),
 
 
     path('student/student_logout', views.student_logout, name = 'student_logout'),
@@ -48,8 +49,10 @@ urlpatterns = [
     # path('submit-damaged-apparatus/<int:return_request_id>/', views.submit_damaged_apparatus, name='submit_damaged_apparatus'),
     path("technician/payment_status/", views.payment_status, name = "payment_status"),
     path("payment-receipt/<int:request_id>/", views.generate_payment_pdf, name="generate_payment_pdf"),
+
     
     path('technician/review_payment_receipt', views.review_payment_receipt, name = 'review_payment_receipt'),
+
     
 
 
