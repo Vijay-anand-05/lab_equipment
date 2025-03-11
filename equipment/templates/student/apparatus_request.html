@@ -2,8 +2,22 @@
 
 {% block apparatus_request %}
 
+{% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+
 <div class="container mt-4">
-    <h2 class="text-center">Apparatus Request</h2>
+    <h2 class="text-center">Apparatus / System</h2>
 
     <!-- Display Student Department -->
     <div class="alert alert-info">
@@ -84,17 +98,17 @@
                 </tbody>
             </table>
 
-            <button type="submit" class="btn btn-success btn-block">
+            <button type="submit" class="btn btn-success btn-block" name="request_apparatus">
                 Request All Filtered Apparatus
             </button>
         </form>
-    
+
     {% else %}
         <div class="alert alert-warning text-center">No apparatus found. Try adjusting your filters.</div>
     {% endif %}
-
 </div>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 {% endblock apparatus_request %}

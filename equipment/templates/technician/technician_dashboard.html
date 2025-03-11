@@ -125,8 +125,9 @@
               <button class="btn btn-danger btn-sm">Rejected</button>
             {% elif group.status == "Returned" %}
               <button class="btn btn-warning btn-sm">Returned</button>
-            {% elif group.status == "Damaged" %}
+            {% elif group.status == "Damaged"%}
               <button class="btn btn-secondary btn-sm">Damaged</button>
+              
             {% else %}
               <!-- Pending: show Accept and Reject with group details -->
               <button class="btn btn-info btn-sm status-accept"

@@ -20,3 +20,14 @@ class LabExerciseForm(forms.ModelForm):
     class Meta:
         model = LabExercise
         fields = "__all__"  # Includes all fields from the model
+        
+        
+        
+from django import forms
+from .models import Payment
+
+class PaymentProofForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ["payment_proof"]  # Only allow proof upload
+

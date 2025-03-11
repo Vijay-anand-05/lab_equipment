@@ -202,6 +202,10 @@ class ApparatusRequest(models.Model):
         ("Request", "Request"),
         ("Return", "Return"),
     ]
+    # fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    remarks = models.TextField(blank=True, null=True)
+    fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    technician_remarks = models.TextField(null=True, blank=True)
     technician_staff_id = models.CharField(max_length=100, null=True, blank=True)
     student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE)
     lab_batch = models.ForeignKey(LabBatchAssignment, on_delete=models.CASCADE, null=True, blank=True)
@@ -233,12 +237,7 @@ class ApparatusRequest(models.Model):
     course_code = models.CharField(max_length=20, blank=True, null=True)
     verified = models.BooleanField(default=False)
     verified_date = models.DateTimeField(null=True, blank=True)
-    damaged_apparatus = models.ManyToManyField(
-    "Apparatus",
-    through="ApparatusRequestDamage",  # Use the through model
-    related_name="damaged_requests",
-    blank=True,
-)
+    
 
     class Meta:
         db_table = "apparatus_request"
@@ -246,6 +245,9 @@ class ApparatusRequest(models.Model):
 
     def __str__(self):
         return f"{self.student.student_name} - {self.apparatus.apparatus_name} - {self.status} ({self.request_type})"
+
+
+
 
 class ApparatusRequestDamage(models.Model):
     apparatus_request = models.ForeignKey(ApparatusRequest, on_delete=models.CASCADE)
@@ -256,3 +258,28 @@ class ApparatusRequestDamage(models.Model):
 
     class Meta:
         db_table = "apparatus_request_damage"
+        
+class regulation_master(models.Model):
+    regulation_year = models.IntegerField()
+    regulation_name = models.CharField(max_length=100)
+    
+    
+    
+    
+from django.db import models
+
+class Payment(models.Model):
+    student = models.ForeignKey(
+        Student_cgpa,  # Ensure this model exists in your project
+        on_delete=models.CASCADE,
+        related_name="payments"  # Helps with reverse lookups
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)  # Payment amount
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_proof = models.ImageField(upload_to="payment_proofs/", blank=True, null=True)  # Uploaded Payment Proof
+    
+    class Meta:
+        db_table = "payment_upload"  # Explicitly set table name in DB
+
+    def __str__(self):
+        return f"{self.student.student_name} - {self.amount}"

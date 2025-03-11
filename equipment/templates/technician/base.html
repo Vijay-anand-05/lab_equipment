@@ -78,18 +78,23 @@
         </div>
         <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-                <a href="{% url 'technician_dashboard' %}" class="nav-link sidebar-link ">
+                <a href="{% url 'technician_dashboard' %}" class="nav-link sidebar-link {% if page_name == 'technician_dashboard' %}active{% endif %}">
                     <i class="fa fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'damaged_apparatus' %}" class="nav-link sidebar-link">
+                <a href="{% url 'damaged_apparatus' %}" class="nav-link sidebar-link {% if page_name == 'damaged_apparatus' %}active{% endif %}">
                     <i class="fas fa-exclamation-triangle mr-3"></i> Damaged Apparatus
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{% url 'payment_status' %}" class="nav-link sidebar-link">
                     <i class="fas fa-money-bill-wave mr-3"></i> Payment Status
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'review_payment_receipt' %}" class="nav-link sidebar-link">
+                    <i class="fa-solid fa-file-invoice-dollar mr-3"></i> Review Payment Receipts
                 </a>
             </li>
             
@@ -183,6 +188,11 @@
             
         
         {% block payment_status %}{% endblock payment_status %}
+
+
+        
+        {% block review_payment_receipt %}{% endblock review_payment_receipt %}
+            
             
 
             

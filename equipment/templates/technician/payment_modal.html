@@ -64,34 +64,13 @@
         </div>
         <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-                <a href="{% url 'student_profile' %}" class="nav-link">
+                <a href="" class="nav-link">
                     <i class="fas fa-user-circle mr-3"></i> Profile
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'student_dashboard' %}" class="nav-link">
-                    <i class="fas fa-chalkboard mr-3"></i> Apparatus Issue Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'requested_apparatus' %}" class="nav-link">
-                    <i class="fas fa-flask mr-3"></i> Requested Apparatus
-                </a>
-            </li>
-            
-            <li class="nav-item">
-                <a href="{% url 'apparatus_request' %}" class="nav-link">
-                    <i class="fas fa-file-signature mr-3"></i> Apparatus Request
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'payment_upload' %}" class="nav-link">
-                    <i class="fas fa-money-check-alt mr-3"></i> Payments & Upload
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{% url 'student_logout' %}" class="nav-link">
+                <a href="" class="nav-link">
                     <i class="fas fa-sign-out-alt mr-3"></i> Logout
                 </a>
             </li>
@@ -104,30 +83,7 @@
         </button>
 
         
-        {% block student_profile %}{% endblock student_profile %}
-
-
-
         
-        {% block apparatus_request %}{% endblock apparatus_request %}
-            
-            
-        
-        {% block student_dashboard %}
-            
-        {% endblock student_dashboard %}
-            
-        
-        {% block requested_apparatus %}
-            
-        {% endblock requested_apparatus %}
-            
-
-        {% block apparatus_details %}{% endblock apparatus_details %}
-        
-        {% block payment_and_upload %}{% endblock payment_and_upload %}
-            
-
         
     
 
