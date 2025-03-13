@@ -178,7 +178,7 @@ class LabBatchAssignment(models.Model):
     department and section at the time of assignment.
     """
 
-    student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE, related_name="lab_assignments")
+    student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE, related_name="lab_assignments", db_constraint=False)
     lab_batch_no = models.CharField(max_length=50)
     course_code = models.CharField(max_length=10)
     ex_no = models.CharField(max_length=50)
@@ -270,28 +270,50 @@ class Payment(models.Model):
     student = models.ForeignKey(
         Student_cgpa,  
         on_delete=models.CASCADE,
-        related_name="payments", db_constraint=False
+        related_name="payments", 
+        db_constraint=False
     )
-    lab_batch = models.ForeignKey(
-        LabBatchAssignment,
-        on_delete=models.CASCADE,
-        related_name="batch_payments",
-        null=True,
-        blank=True,
-    )  # Track which lab batch the student belongs to
 
-    damaged_apparatus = models.ManyToManyField(
-        ApparatusRequestDamage,
-        related_name="damage_payments",
-        blank=True
-    )  # Track which damaged apparatus items are being paid for
+    damaged_apparatus = models.ManyToManyField(ApparatusRequestDamage, blank=True)
+    
+    payment_proof = models.ImageField(upload_to="payment_proofs/", blank=True, null=True)  
 
-    payment_proof = models.ImageField(upload_to="payment_proofs/", blank=True, null=True)  # Student uploads payment receipt
-
-    uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp when proof is uploaded
+    uploaded_at = models.DateTimeField(auto_now_add=True)  
 
     class Meta:
         db_table = "payment_upload"  
 
     def __str__(self):
-        return f"{self.student.student_name} - Lab Batch: {self.lab_batch.lab_batch_no} - Payment Proof Uploaded"
+        return f"{self.student.student_name} - Apparatus: {self.damage_request.apparatus.apparatus_name if self.damage_request else 'N/A'} - Payment Proof Uploaded"
+
+# class Payment(models.Model):
+#     student = models.ForeignKey(
+#         Student_cgpa,  
+#         on_delete=models.CASCADE,
+#         related_name="payments",
+#         db_constraint=False
+#     )
+
+#     payment_proof = models.ImageField(
+#         upload_to="payment_proofs/", blank=True, null=True
+#     )  # Student uploads payment receipt
+
+#     uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp when proof is uploaded
+
+#     verified = models.BooleanField(default=False)  # Track if payment is verified
+
+#     class Meta:
+#         db_table = "payment_upload"  
+
+#     def __str__(self):
+#         return f"{self.student.student_name} - Payment Proof Uploaded"
+
+#     def get_lab_batches(self):
+#         """Retrieve lab batches associated with this student."""
+#         return self.student.lab_assignments.all()
+
+#     def get_damaged_apparatus(self):
+#         """Retrieve damaged apparatus linked to this student."""
+#         return ApparatusRequestDamage.objects.filter(student=self.student)
+
+

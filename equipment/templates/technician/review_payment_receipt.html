@@ -2,7 +2,119 @@
 
 {% block review_payment_receipt %}
 
+<style>
+    /* Small Thumbnail */
+    .proof-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        border: 2px solid #28a745;
+        border-radius: 8px;
+        cursor: pointer;
+    }
 
-    
+    .proof-image:hover {
+        transform: scale(1.2);
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Full Image Styling */
+    .full-image {
+        width: 100%;
+        max-width: 600px;
+        border-radius: 8px;
+        transition: transform 0.3s ease-in-out;
+        cursor: zoom-in;
+    }
+
+    /* Zoom Effect */
+    .full-image:hover {
+        transform: scale(1.5);
+    }
+</style>
+<div class="container mt-4">
+    <h2 class="mb-4">Review Payment Receipts</h2>
+
+    <!-- Filter Form -->
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="reg_no" class="form-label">Student Reg No</label>
+                <input type="text" name="reg_no" id="reg_no" class="form-control" 
+                       value="{{ reg_no_filter }}" placeholder="Enter Reg No">
+            </div>
+            <div class="col-md-4">
+                <label for="course_code" class="form-label">Course Code</label>
+                <select name="course_code" id="course_code" class="form-select">
+                    <option value="">All</option>
+                    {% for code in course_codes %}
+                        <option value="{{ code }}" {% if code == course_code_filter %}selected{% endif %}>{{ code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 align-self-end">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Payment Review Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Student Reg No</th>
+                    <th>Section</th>
+                    <th>Department</th>
+                    <th>Total Fine Amount</th>
+                    <th>Payment Proof</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in student_payment_data %}
+                <tr>
+                    <td>{{ student.reg_no }}</td>
+                    <td>{{ student.section }}</td>
+                    <td>{{ student.department }}</td>
+                    <td> ₹ {{ student.total_fine }}</td>
+                    <td class="text-center">
+                        {% if student.payment_proof %}
+                            <!-- Thumbnail Preview -->
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal">
+                                <img src="{{ student.payment_proof }}" alt="Payment Proof" class="img-thumbnail proof-image">
+                            </a>
+                            
+                            <!-- Modal for Full Image View -->
+                            <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Payment Proof</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-center">
+                                            <img src="{{ student.payment_proof }}" alt="Full Image" class="full-image">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="badge bg-danger text-white px-3 py-2">No Proof</span>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- Styles -->
+                    
+                    
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock review_payment_receipt %}
-    

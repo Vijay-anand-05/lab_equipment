@@ -21,6 +21,58 @@
     <title>Login</title>
 </head>
 <body>
+    <style>
+        /* Keyframes for fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Keyframes for button hover animation */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Apply fade-in animation to the heading */
+        .heading h1 {
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        /* Card hover effect */
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Button hover effect */
+        .btn-primary {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #003f5c;
+            animation: pulse 1s infinite;
+        }
+
+        /* Fade-in animation for cards */
+        .card-row .card, .row .card {
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        /* Delay animations for each card */
+        .card-row .card { animation-delay: 0.2s; }
+        .row:nth-child(2) .card { animation-delay: 0.4s; }
+        .row:nth-child(3) .card { animation-delay: 0.6s; }
+    </style>
     <div class="rit">
         <img src="/static/images/rit.jpg" style="width: 100%;" alt="">
     </div>
@@ -28,7 +80,7 @@
     <div class="container">
         <br>
         <a href="http://172.16.1.5:9000">
-            <button class="btn btn-primary">RIT LAB MANAGMENT</button>
+            <button class="btn btn-primary">RIT LAB MANAGEMENT</button>
         </a>
         <center>
             <div class="heading">
@@ -70,10 +122,12 @@
                     </a>
                 </div>
             </div>
-
-           
         </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

@@ -37,7 +37,7 @@ urlpatterns = [
     path('technician/add_lab_exercise', views.add_lab_exercise, name = "add_lab_exercise"),
     path('technician/add_apparatus', views.add_apparatus, name = 'add_apparatus'),
     path('technician/add_batch', views.add_batch, name = 'add_batch'),
-    path('view_batches/', views.view_batches, name='view_batches'),
+    path('technician/view_batches', views.view_batches, name='view_batches'),
     path('edit_lab_batch/<int:assignment_id>/', views.edit_lab_batch_assignment, name='edit_lab_batch_assignment'),
     
     path("technician/technician_dashboard", views.technician_dashboard, name="technician_dashboard"),

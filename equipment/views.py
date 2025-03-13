@@ -413,53 +413,92 @@ from .forms import PaymentProofForm
 from .models import Payment, Student_cgpa
 from django.contrib.auth.decorators import login_required
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.core.files.base import ContentFile
-from django.utils.encoding import force_bytes
-import base64
+# @login_required
 import qrcode
+import base64
 from io import BytesIO
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+from django.contrib import messages  # Import messages
+from .models import Student_cgpa, Payment, ApparatusRequest, LabBatchAssignment
+from .forms import PaymentProofForm
 
 def payment_upload(request):
     # Get the logged-in student based on session
-    student_regno = request.session.get("student_regno")  
+    student_regno = request.session.get("student_regno")
     if not student_regno:
-        return redirect("student_login")  
+        messages.error(request, "Please log in to continue.")
+        return redirect("student_login")  # Redirect if no student is logged in
 
     try:
-        student = Student_cgpa.objects.using('rit_cgpatrack').get(reg_no=student_regno)
+        student = Student_cgpa.objects.using("rit_cgpatrack").get(reg_no=student_regno)
     except Student_cgpa.DoesNotExist:
+        messages.error(request, "Invalid student registration number. Please try again.")
         return redirect("student_login")
-    print(student)
-    # Fetch student's lab batch (assuming each student belongs to one batch)
-    lab_batch = LabBatchAssignment.objects.filter(student=student).first()
-    print(lab_batch)
-    
-    if not lab_batch:
-        return render(request, "student/payment_upload.html", {
-            "error_message": "You are not assigned to any lab batch."
+
+    # **Fetch Fine Details** (Grouped by Course, Lab Batch, and Experiment)
+    fine_records = ApparatusRequestDamage.objects.filter(
+        apparatus_request__student__reg_no=student_regno,
+        apparatus_request__status="Damaged"
+    ).select_related("apparatus_request__lab_batch", "apparatus_request__apparatus")
+
+    # **Grouping Fine Records**
+    grouped_fines = {}
+    damaged_apparatus_ids = []  # To store damaged apparatus IDs
+
+    for record in fine_records:
+        apparatus_request = record.apparatus_request
+        lab_batch = apparatus_request.lab_batch
+        apparatus = apparatus_request.apparatus
+
+        key = (lab_batch.course_code, lab_batch.lab_batch_no, apparatus.experiment_name)
+
+        if key not in grouped_fines:
+            grouped_fines[key] = {
+                "course_code": lab_batch.course_code,
+                "lab_batch_no": lab_batch.lab_batch_no,
+                "experiment_name": apparatus.experiment_name,
+                "damaged_apparatus": [],
+                "total_fine": 0
+            }
+
+        # Append damaged apparatus details
+        grouped_fines[key]["damaged_apparatus"].append({
+            "apparatus_id": record.id,  # Store damaged apparatus ID
+            "apparatus_name": apparatus.apparatus_name,
+            "fine_amount": record.fine_amount or 0,
+            "remarks": record.remarks or ""
         })
 
-    # Fetch apparatus assigned to the lab batch
-    apparatus_list = ApparatusRequestDamage.objects.filter(lab_batch=lab_batch)
+        # Sum up total fine amount
+        grouped_fines[key]["total_fine"] += record.fine_amount or 0
 
-    # Check if a payment record already exists
-    payment, created = Payment.objects.get_or_create(student=student, lab_batch=lab_batch)
+        # Collect damaged apparatus IDs
+        damaged_apparatus_ids.append(record.id)
 
+    fine_records_list = list(grouped_fines.values())
+
+    # **Ensure a Payment Record Exists and Link to Damaged Apparatus**
+    payment, created = Payment.objects.get_or_create(student=student)
+
+    # **Link Damaged Apparatus to Payment**
+    if hasattr(payment, "damaged_apparatus"):  # Ensure field exists in Payment model
+        payment.damaged_apparatus.set(damaged_apparatus_ids)  # ManyToManyField update
+
+    # **Handle File Upload**
     if request.method == "POST":
         form = PaymentProofForm(request.POST, request.FILES, instance=payment)
         if form.is_valid():
-            payment = form.save(commit=False)
-            payment.lab_batch = lab_batch  # Associate with the lab batch
-            payment.apparatus_list.set(apparatus_list)  # Link apparatus
-            payment.save()
+            form.save()
+            messages.success(request, "Payment proof uploaded successfully!")
             return redirect("payment_upload")  # Refresh page after successful upload
+        else:
+            messages.error(request, "Error uploading payment proof. Please check your file and try again.")
 
     else:
         form = PaymentProofForm(instance=payment)
 
-    # **Generate Dynamic QR Code** for mobile upload
+    # **Generate QR Code for Mobile Upload**
     mobile_upload_url = request.build_absolute_uri("/student/qr_code/")
     qr = qrcode.make(mobile_upload_url)
     buffer = BytesIO()
@@ -474,11 +513,9 @@ def payment_upload(request):
             "payment": payment,
             "qr_base64": qr_base64,  # Pass QR code to template
             "student": student,
-            "lab_batch": lab_batch,
-            "apparatus_list": apparatus_list
+            "fine_records": fine_records_list,  # Pass grouped fine details
         }
     )
-
 
 
 def upload_qr(request):
@@ -514,9 +551,7 @@ def faculty_login(request):
             if encrypt_password(password) == user.Password:
                 if user.role == "HOD":
                     
-                    print(
-                    encrypt_password(password), user.Password
-                )  # Assuming passwords are hashed
+                    print(encrypt_password(password), user.Password)  # Assuming passwords are hashed
                     print("Authentication successful!")
 
                 # Create a session or any custom login logic
@@ -609,45 +644,58 @@ def encrypt_password(password):
     import hashlib
     return hashlib.sha256(password.encode()).hexdigest()
 
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
+from .models import User
+# from .utils import encrypt_password  # Ensure this function is correctly implemented
+
 def technician_login(request):
-    print("dsfslks", request.method)  # Debugging
+    print("Request Method:", request.method)  # Debugging
+
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
         next_url = request.GET.get("next")
-        print(username, password)
+
+        print("Login Attempt:", username, password)  # Debugging
+
         try:
-            # Fetch the user from the database
-            user = User.objects.using("rit_e_approval").get(staff_id=username)
-            print(user)  # Debugging
+            # Fetch all users with the same staff_id
+            users = User.objects.using("rit_e_approval").filter(staff_id=username)
 
-            # Check if the password matches
-            if encrypt_password(password) == user.Password:
-                if user.role == "Technician":
-                    # Manually log in the user
-                    request.session['user_id'] = user.id  # Store user ID in session
-                    request.session['user_role'] = user.role  # Store user role in session
+            if not users.exists():
+                messages.error(request, "User not found!")
+                return render(request, "technician_login.html")
 
-                    print(f"Logged in User: {user}")  # Debugging
+            # Filter users with matching passwords
+            valid_users = [user for user in users if encrypt_password(password) == user.Password]
+            print(valid_users)
 
-                    # Ensure `next_url` is safe before redirecting
-                    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
-                        return redirect(next_url)
-
-                    return redirect("technician_dashboard")
-                else:
-                    messages.error(request, "You are not authorized to log in as a technician.")
-            else:
+            if not valid_users:
                 messages.error(request, "Invalid credentials!")
+                return render(request, "technician_login.html")
 
-        except User.DoesNotExist:
-            messages.error(request, "User not found!")
+            # Automatically select the best role
+            user = next((u for u in valid_users if u.role == "Lab_Incharge"), valid_users[0])  # Prefer Lab_Incharge
+
+            # Store session data
+            request.session["user_id"] = user.id
+            request.session["user_role"] = user.role
+
+            print(f"Logged in User: {user.staff_id}, Role: {user.role}")  # Debugging
+
+            # Redirect to appropriate dashboard
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
+
+            return redirect("technician_dashboard") if user.role == "Lab_Incharge" else redirect("staff_dashboard")
+
         except Exception as e:
             messages.error(request, f"An error occurred: {str(e)}")
-            print(e)  # Debugging
+            print("Error:", e)  # Debugging
 
     return render(request, "technician_login.html")
-
 
 
 
@@ -758,7 +806,7 @@ def technician_dashboard(request):
     user_data = User.objects.using("rit_e_approval").get(id=user_id)
     
     # Check if user is a technician and get department
-    if user_data.role != "Technician":
+    if user_data.role != "Lab_Incharge":
         return redirect("/hod_login")
 
     # Map department name using the dictionary
@@ -894,7 +942,7 @@ def accept_or_reject_apparatus_request(request):
         user_data = User.objects.using("rit_e_approval").get(id=user_id)
         
         # Check if user is a technician
-        if user_data.role != "Technician":
+        if user_data.role != "Lab_Incharge":
             return redirect("/hod_login")
 
         technician_department = user_data.Department  # Assuming the technician has a department field
@@ -947,6 +995,8 @@ def accept_or_reject_apparatus_request(request):
         return JsonResponse({"success": False, "message": str(e)}, status=500)
 
     return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
+
+
 @csrf_exempt  # Use proper CSRF handling in production
 def update_apparatus_request_status(request):
     if request.method == "POST":
@@ -994,6 +1044,8 @@ def update_apparatus_request_status(request):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)})
     return JsonResponse({"success": False, "message": "Invalid request method."})
+
+
 
 
 from django.shortcuts import render, redirect
@@ -1066,7 +1118,7 @@ def add_course(request):
     print(mapped_department)
 
     # Check if the user is a Technician
-    if user_data.role != "Technician":
+    if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/some_dashboard")
 
@@ -1119,7 +1171,7 @@ def add_lab_exercise(request):
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
     # Check if the user is a Technician
-    if user_data.role != "Technician":
+    if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/some_dashboard")
 
@@ -1208,7 +1260,7 @@ def add_apparatus(request):
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
     # 🔹 Ensure only Technicians can access
-    if user_data.role != "Technician":
+    if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/some_dashboard")
 
@@ -1352,7 +1404,7 @@ def add_batch(request):
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
     # 🔹 Ensure only Technicians can access
-    if user_data.role != "Technician":
+    if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/some_dashboard")
 
@@ -1548,7 +1600,7 @@ def view_batches(request):
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
     # 🔹 Ensure only Technicians can access
-    if user_data.role != "Technician":
+    if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/some_dashboard")
 
@@ -1940,6 +1992,17 @@ def damaged_apparatus(request):
         )
 
         # Retrieve selected apparatus IDs
+        if action in ["verify", "not_verify"]:
+            if related_requests.exists():
+                if action == "verify":
+                    updated = related_requests.update(verified=True, verified_date=timezone.now())
+                    messages.success(request, f"✅ {updated} apparatus requests have been verified.")
+                elif action == "not_verify":
+                    updated = related_requests.update(verified=False, verified_date=None)
+                    messages.warning(request, f"⚠️ Verification removed for {updated} apparatus requests.")
+            else:
+                messages.error(request, "❌ No apparatus found to verify.")
+            return redirect("damaged_apparatus")
         selected_apparatus_ids = request.POST.getlist("selected_apparatus")
         if not selected_apparatus_ids:
             messages.error(request, "❌ No apparatus selected.")
@@ -1987,14 +2050,13 @@ def damaged_apparatus(request):
             return redirect("damaged_apparatus")
 
         # Handle verification
-        if action == "verify":
-            related_requests.update(verified=True, verified_date=timezone.now())
-            messages.success(request, f"✅ {updated_count} apparatus verified.")
-        elif action == "not_verify":
-            related_requests.update(verified=False, verified_date=None)
-            messages.warning(request, f"⚠️ Verification removed for {updated_count} apparatus.")
+        # Handle verification
+        # Check if action is for verification (skip selection requirement)
+        
 
-        return redirect("damaged_apparatus")
+
+
+        # return redirect("damaged_apparatus")
 
     # 🔹 Filtered queryset - Only damaged apparatus from the technician's department
     qs = ApparatusRequest.objects.filter(status="Damaged", apparatus__department=mapped_department)
@@ -2199,6 +2261,9 @@ def payment_status(request):
     }
     return render(request, "technician/payment_status.html", context)
 
+
+
+
 import os
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
@@ -2209,11 +2274,32 @@ from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib.utils import ImageReader
 
+import os
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from django.conf import settings
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib.utils import ImageReader
+
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Table, TableStyle
+import os
+from PIL import Image
+from django.conf import settings
+
 def generate_payment_pdf(request, request_id):
     apparatus_request = get_object_or_404(ApparatusRequest, id=request_id)
 
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="payment_receipt.pdf"'
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="payment_receipt.pdf"'
 
     p = canvas.Canvas(response, pagesize=A4)
     width, height = A4
@@ -2222,7 +2308,7 @@ def generate_payment_pdf(request, request_id):
     logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "image.png")
     if os.path.exists(logo_path):
         logo = ImageReader(logo_path)
-        p.drawImage(logo, 50, height - 100, width=80, height=50, mask='auto')
+        p.drawImage(logo, 50, height - 100, width=100, height=80, mask="auto")
 
     # Title
     p.setFont("Helvetica-Bold", 16)
@@ -2236,60 +2322,50 @@ def generate_payment_pdf(request, request_id):
     y_position = height - 180
     row_height = 25
 
-    # Helper function to draw rows (one field per line)
     def draw_row(label, value, y_offset):
         p.setFont("Helvetica-Bold", 12)
         p.drawString(50, y_offset, label)
         p.setFont("Helvetica", 12)
-        p.drawString(200, y_offset, str(value))  # Adjust the x-position for alignment
+        p.drawString(200, y_offset, str(value))  # Adjust for alignment
         return y_offset - row_height
 
-    # Display Experiment Name
+    # Display essential details
     y_position = draw_row("Experiment Name:", apparatus_request.apparatus.experiment_name, y_position)
-
-    # Display Practical Course
     y_position = draw_row("Practical Course:", apparatus_request.apparatus.practical_course, y_position)
-
-    # Display Payment Verification
-    payment_verified = "Yes" if apparatus_request.verified else "No"
-    y_position = draw_row("Payment Verified:", payment_verified, y_position)
-
-    # Display Date
+    y_position = draw_row("Payment Verified:", "Paid" if apparatus_request.verified else "Not Paid", y_position)
     y_position = draw_row("Date:", apparatus_request.verified_date, y_position)
-
-    # Display Course Code
     y_position = draw_row("Course Code:", apparatus_request.course_code, y_position)
-
-    # Display Experiment No
     y_position = draw_row("Experiment No:", apparatus_request.lab_batch.ex_no, y_position)
-
-    # Display Department
     y_position = draw_row("Department:", apparatus_request.apparatus.department, y_position)
-
-    # Display Lab Batch No
     y_position = draw_row("Lab Batch No:", apparatus_request.lab_batch.lab_batch_no, y_position)
-
-    # Display Status
     y_position = draw_row("Status:", apparatus_request.status, y_position)
 
-    # Apparatus Details Table
+    # Fetch Fine Details
+    student = get_object_or_404(Student_cgpa.objects.using("rit_cgpatrack"), reg_no=apparatus_request.student_id)
+
+    fine_records = ApparatusRequestDamage.objects.filter(
+        apparatus_request__student__reg_no=student.reg_no,
+        apparatus_request__status="Damaged"
+    ).select_related("apparatus_request__lab_batch", "apparatus_request__apparatus")
+
+    # Group Fine Records
     table_data = [["Apparatus Name", "Fine Amount (INR)", "Remarks"]]
     total_fine = 0
 
-    for damage in apparatus_request.apparatusrequestdamage_set.all():
-        fine_amount = damage.fine_amount
-        total_fine += fine_amount
+    for record in fine_records:
+        apparatus = record.apparatus_request.apparatus
         table_data.append([
-            damage.apparatus.apparatus_name,
-            f"₹ {fine_amount}",
-            damage.remarks
+            apparatus.apparatus_name,
+            f" {record.fine_amount or 0}",
+            record.remarks or "No remarks",
         ])
+        total_fine += record.fine_amount or 0
 
-    # Add Total Fine Amount row
-    table_data.append(["", "Total: ₹ {}".format(total_fine), ""])
+    # Append total fine amount
+    table_data.append(["", f"Total:  {total_fine}", ""])
 
     # Create and Style Table
-    table = Table(table_data, colWidths=[200, 100, 200])
+    table = Table(table_data, colWidths=[150, 150, 100])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
@@ -2298,10 +2374,10 @@ def generate_payment_pdf(request, request_id):
         ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
         ("GRID", (0, 0), (-1, -1), 1, colors.black),
         ("BACKGROUND", (1, len(table_data) - 1), (1, len(table_data) - 1), colors.lightgrey),
-        ("FONTNAME", (1, len(table_data) - 1), (1, len(table_data) - 1), "Helvetica-Bold")
+        ("FONTNAME", (1, len(table_data) - 1), (1, len(table_data) - 1), "Helvetica-Bold"),
     ]))
 
-    # Draw Table
+    # Draw Fine Details Table
     y_position -= 50
     table.wrapOn(p, width, height)
     table.drawOn(p, 50, y_position - len(table_data) * 20)
@@ -2320,29 +2396,21 @@ def generate_payment_pdf(request, request_id):
     for assignment in lab_batch_assignments:
         student_id = assignment.student_id
         student_name = student_dict.get(student_id, "Unknown")
-        lab_batch_students.append({
-            "student_id": student_id,
-            "student_name": student_name,
-            "department": assignment.department,
-            "section": assignment.section,
-            "assessment": assignment.assessment,
-        })
+        lab_batch_students.append([
+            student_id,
+            student_name,
+            assignment.department,
+            assignment.section,
+            assignment.assessment,
+        ])
 
     # Lab Batch Students Table
-    y_position -= len(table_data) * 20 + 50  # Adjust position after the previous table
+    y_position -= len(table_data) * 20 + 50
     p.setFont("Helvetica-Bold", 14)
     p.drawString(50, y_position, "Lab Batch Students:")
 
     y_position -= 20
-    student_table_data = [["Student ID", "Student Name", "Department", "Section", "Assessment"]]
-    for student in lab_batch_students:
-        student_table_data.append([
-            student["student_id"],
-            student["student_name"],
-            student["department"],
-            student["section"],
-            student["assessment"],
-        ])
+    student_table_data = [["Student ID", "Student Name", "Department", "Section", "Assessment"]] + lab_batch_students
 
     student_table = Table(student_table_data, colWidths=[100, 150, 100, 80, 100])
     student_table.setStyle(TableStyle([
@@ -2354,8 +2422,55 @@ def generate_payment_pdf(request, request_id):
         ("GRID", (0, 0), (-1, -1), 1, colors.black),
     ]))
 
+    # Draw Student Table
     student_table.wrapOn(p, width, height)
     student_table.drawOn(p, 50, y_position - len(student_table_data) * 20)
+
+    # Add new page for payment proof
+    p.showPage()
+
+    # Fetch Payment Proof
+    payment = Payment.objects.filter(student=student).first()
+
+   
+
+    if payment and payment.payment_proof:
+        proof_path = os.path.join(settings.MEDIA_ROOT, str(payment.payment_proof))
+        if os.path.exists(proof_path):
+            proof = ImageReader(proof_path)
+
+            # Get the actual dimensions of the image
+            with Image.open(proof_path) as img:
+                img_width, img_height = img.size
+
+            # Set the desired width while maintaining aspect ratio
+            max_width = 300  # Maximum allowed width
+            max_height = 300  # Maximum allowed height
+            
+            # Maintain aspect ratio
+            aspect_ratio = img_width / img_height
+            if img_width > max_width or img_height > max_height:
+                if img_width > img_height:
+                    image_width = max_width
+                    image_height = max_width / aspect_ratio
+                else:
+                    image_height = max_height
+                    image_width = max_height * aspect_ratio
+            else:
+                image_width = img_width
+                image_height = img_height
+
+            # Calculate X and Y positions to center the image
+            x_position = (width - image_width) / 2  
+            y_position = (height - image_height) / 2  
+
+            # Draw the centered image
+            p.drawImage(proof, x_position, y_position, width=image_width, height=image_height)
+
+
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(width / 2, height - 50, "Payment Proof")
 
     # Finalize
     p.showPage()
@@ -2365,232 +2480,191 @@ def generate_payment_pdf(request, request_id):
 
 
 
+
+
+
+
+# def review_payment_receipt(request):
+#     # return render(request, "technician/review_payment_receipt.html")
+#     # Get filter values from request
+#     department = request.GET.get("department")
+#     course_code = request.GET.get("course_code")
+#     payment_status = request.GET.get("payment_status")  # Paid or Not Paid
+
+#     # Base queryset for damaged apparatus requests
+#     qs = ApparatusRequest.objects.filter(status="Damaged")
+
+#     if department:
+#         qs = qs.filter(apparatus__department=department)
+#     if course_code:
+#         qs = qs.filter(lab_batch__course_code=course_code)
+#     if payment_status:
+#         qs = qs.filter(verified=(payment_status == "paid"))  # Using verified field
+
+#     grouped_list = []
+#     grouped = (
+#         qs.values(
+#             "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
+#             "lab_batch__lab_batch_no", "status", "verified"
+#         )
+#         .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))  # Summing fine amounts
+#         .order_by("student__reg_no", "lab_batch__lab_batch_no")
+#     )
+
+#     for group in grouped:
+#         details_qs = ApparatusRequest.objects.filter(
+#             student__reg_no=group["student__reg_no"],
+#             lab_batch__course_code=group["lab_batch__course_code"],
+#             apparatus__ex_no=group["apparatus__ex_no"],
+#             apparatus__department=group["apparatus__department"],
+#             lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"],
+#         )
+        
+#         first_request = details_qs.first()
+#         group["request_id"] = first_request.id if first_request else None
+#         group["remarks"] = first_request.technician_remarks if first_request else ""
+#         group["apparatus_list"] = [
+#             {
+#                 "id": detail.apparatus.id,
+#                 "apparatus_name": detail.apparatus.apparatus_name,
+#                 "fine_amount": detail.apparatusrequestdamage_set.first().fine_amount if detail.apparatusrequestdamage_set.exists() else 0,
+#                 "remarks": detail.apparatusrequestdamage_set.first().remarks if detail.apparatusrequestdamage_set.exists() else "",
+#             }
+#             for detail in details_qs if detail.apparatus
+#         ]
+#         grouped_list.append(group)
+
+#     departments = LabBatchAssignment.objects.values_list("department", flat=True).distinct().order_by("department")
+#     course_codes = LabExercise.objects.values_list("course_code", flat=True).distinct().order_by("course_code")
+
+#     context = {
+#         "departments": departments,
+#         "course_codes": course_codes,
+#         "damaged_apparatus_requests": grouped_list,
+#     }
+
+#     return render(request, "technician/review_payment_receipt.html", context)
+
+DEPARTMENT_MAPPING = {
+    "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE": "B.TECH AD",
+    "COMPUTER SCIENCE AND ENGINEERING": "B.E CSE",
+    "INFORMATION TECHNOLOGY": "B.TECH IT",
+    "ELECTRICAL AND ELECTRONICS ENGINEERING": "B.E EEE",
+    "MECHANICAL ENGINEERING": "B.E ME",
+}
+
+from django.shortcuts import render, redirect
+from .models import Payment, ApparatusRequestDamage
+# from core.models import Student_cgpa, User
+from django.db.models import Prefetch
+
+# Department Mapping (if used elsewhere, move to settings or a constants file)
+
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+from .models import Payment, ApparatusRequestDamage, User
+
+from django.shortcuts import render, redirect
+from django.db.models import Sum, Q
+from .models import Payment, ApparatusRequestDamage, User
+
+from django.shortcuts import render, redirect
+from django.db.models import Sum, Q
+from .models import Payment, ApparatusRequestDamage, User, Student
+
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+from .models import Payment, ApparatusRequestDamage, User, Student_cgpa
+
+# Department Mapping
+
+
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+from .models import Payment, ApparatusRequestDamage, User, Student_cgpa, LabExercise
+
+# Department Mapping
 
 def review_payment_receipt(request):
-    return render(request, "technician/review_payment_receipt.html")
-    # Get filter values from request
-    department = request.GET.get("department")
-    course_code = request.GET.get("course_code")
-    payment_status = request.GET.get("payment_status")  # Paid or Not Paid
+    page_name = "review_payment_receipt"
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("/technician_login")
 
-    # Base queryset for damaged apparatus requests
-    qs = ApparatusRequest.objects.filter(status="Damaged")
+    # Fetch technician's department
+    try:
+        user_data = User.objects.using("rit_e_approval").get(id=user_id)
+        technician_department = user_data.Department.strip().upper()
+        mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
+    except User.DoesNotExist:
+        return render(request, "technician/review_payment_receipt.html", {"payments": []})
 
-    if department:
-        qs = qs.filter(apparatus__department=department)
-    if course_code:
-        qs = qs.filter(lab_batch__course_code=course_code)
-    if payment_status:
-        qs = qs.filter(verified=(payment_status == "paid"))  # Using verified field
+    # Get filter parameters
+    reg_no_filter = request.GET.get("reg_no", "").strip()
+    course_code_filter = request.GET.get("course_code", "").strip()
 
-    grouped_list = []
-    grouped = (
-        qs.values(
-            "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
-            "lab_batch__lab_batch_no", "status", "verified"
-        )
-        .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))  # Summing fine amounts
-        .order_by("student__reg_no", "lab_batch__lab_batch_no")
+    # Step 1: Get students who uploaded payment proof
+    student_payments = Payment.objects.filter(payment_proof__isnull=False)
+
+    # Step 2: Get student IDs from payments
+    student_ids = student_payments.values_list("student_id", flat=True)
+
+    # Step 3: Get total fine per student
+    student_payment_data = (
+        ApparatusRequestDamage.objects
+        .filter(apparatus_request__student_id__in=student_ids)
+        .values("apparatus_request__student_id")  
+        .annotate(total_fine=Sum("fine_amount"))  
+        .order_by("apparatus_request__student__reg_no")
     )
 
-    for group in grouped:
-        details_qs = ApparatusRequest.objects.filter(
-            student__reg_no=group["student__reg_no"],
-            lab_batch__course_code=group["lab_batch__course_code"],
-            apparatus__ex_no=group["apparatus__ex_no"],
-            apparatus__department=group["apparatus__department"],
-            lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"],
-        )
-        
-        first_request = details_qs.first()
-        group["request_id"] = first_request.id if first_request else None
-        group["remarks"] = first_request.technician_remarks if first_request else ""
-        group["apparatus_list"] = [
-            {
-                "id": detail.apparatus.id,
-                "apparatus_name": detail.apparatus.apparatus_name,
-                "fine_amount": detail.apparatusrequestdamage_set.first().fine_amount if detail.apparatusrequestdamage_set.exists() else 0,
-                "remarks": detail.apparatusrequestdamage_set.first().remarks if detail.apparatusrequestdamage_set.exists() else "",
-            }
-            for detail in details_qs if detail.apparatus
-        ]
-        grouped_list.append(group)
+    # Step 4: Fetch student details from Student_cgpa model & filter by department
+    filtered_students = []
+    for data in student_payment_data:
+        student = Student_cgpa.objects.using('rit_cgpatrack').filter(reg_no=data["apparatus_request__student_id"]).first()
+        payment = student_payments.filter(student_id=data["apparatus_request__student_id"]).first()
 
-    departments = LabBatchAssignment.objects.values_list("department", flat=True).distinct().order_by("department")
-    course_codes = LabExercise.objects.values_list("course_code", flat=True).distinct().order_by("course_code")
+        if not student:
+            continue  # Skip if student details are missing
 
-    context = {
-        "departments": departments,
-        "course_codes": course_codes,
-        "damaged_apparatus_requests": grouped_list,
-    }
+        # Ensure student belongs to the mapped department
+        if student.department.strip().upper() != mapped_department:
+            continue
 
-    return render(request, "technician/payment_status.html", context)
+        # Apply Reg No filter
+        if reg_no_filter and student.reg_no != reg_no_filter:
+            continue
 
+        # Apply Course Code filter (if course code exists in LabExercise)
+        if course_code_filter:
+            course_exists = LabExercise.objects.filter(
+                department__iexact=mapped_department,
+                course_code__iexact=course_code_filter
+            ).exists()
+            if not course_exists:
+                continue
 
-import os
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
-from django.conf import settings
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle
-from reportlab.lib.utils import ImageReader
+        filtered_students.append({
+            "reg_no": student.reg_no,
+            "section": student.section,
+            "department": student.department,
+            "total_fine": data["total_fine"],
+            "payment_proof": payment.payment_proof.url if payment and payment.payment_proof else None,
 
-def generate_payment_pdf(request, request_id):
-    apparatus_request = get_object_or_404(ApparatusRequest, id=request_id)
-
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="payment_receipt.pdf"'
-
-    p = canvas.Canvas(response, pagesize=A4)
-    width, height = A4
-
-    # Load Logo
-    logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "image.png")
-    if os.path.exists(logo_path):
-        logo = ImageReader(logo_path)
-        p.drawImage(logo, 50, height - 100, width=80, height=50, mask='auto')
-
-    # Title
-    p.setFont("Helvetica-Bold", 16)
-    p.drawCentredString(width / 2, height - 120, "Fine Payment Confirmation – Lab Equipment")
-
-    # Line separator
-    p.setStrokeColor(colors.black)
-    p.line(50, height - 130, width - 50, height - 130)
-
-    # Define text positions
-    y_position = height - 180
-    row_height = 25
-
-    # Helper function to draw rows (one field per line)
-    def draw_row(label, value, y_offset):
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(50, y_offset, label)
-        p.setFont("Helvetica", 12)
-        p.drawString(200, y_offset, str(value))  # Adjust the x-position for alignment
-        return y_offset - row_height
-
-    # Display Experiment Name
-    y_position = draw_row("Experiment Name:", apparatus_request.apparatus.experiment_name, y_position)
-
-    # Display Practical Course
-    y_position = draw_row("Practical Course:", apparatus_request.apparatus.practical_course, y_position)
-
-    # Display Payment Verification
-    payment_verified = "Yes" if apparatus_request.verified else "No"
-    y_position = draw_row("Payment Verified:", payment_verified, y_position)
-
-    # Display Date
-    y_position = draw_row("Date:", apparatus_request.verified_date, y_position)
-
-    # Display Course Code
-    y_position = draw_row("Course Code:", apparatus_request.course_code, y_position)
-
-    # Display Experiment No
-    y_position = draw_row("Experiment No:", apparatus_request.lab_batch.ex_no, y_position)
-
-    # Display Department
-    y_position = draw_row("Department:", apparatus_request.apparatus.department, y_position)
-
-    # Display Lab Batch No
-    y_position = draw_row("Lab Batch No:", apparatus_request.lab_batch.lab_batch_no, y_position)
-
-    # Display Status
-    y_position = draw_row("Status:", apparatus_request.status, y_position)
-
-    # Apparatus Details Table
-    table_data = [["Apparatus Name", "Fine Amount (INR)", "Remarks"]]
-    total_fine = 0
-
-    for damage in apparatus_request.apparatusrequestdamage_set.all():
-        fine_amount = damage.fine_amount
-        total_fine += fine_amount
-        table_data.append([
-            damage.apparatus.apparatus_name,
-            f"₹ {fine_amount}",
-            damage.remarks
-        ])
-
-    # Add Total Fine Amount row
-    table_data.append(["", "Total: ₹ {}".format(total_fine), ""])
-
-    # Create and Style Table
-    table = Table(table_data, colWidths=[200, 100, 200])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
-        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-        ("BACKGROUND", (1, len(table_data) - 1), (1, len(table_data) - 1), colors.lightgrey),
-        ("FONTNAME", (1, len(table_data) - 1), (1, len(table_data) - 1), "Helvetica-Bold")
-    ]))
-
-    # Draw Table
-    y_position -= 50
-    table.wrapOn(p, width, height)
-    table.drawOn(p, 50, y_position - len(table_data) * 20)
-
-    # Fetch Lab Batch Students
-    lab_batch_assignments = LabBatchAssignment.objects.filter(
-        course_code=apparatus_request.course_code,
-        lab_batch_no=apparatus_request.lab_batch.lab_batch_no,
-        ex_no=apparatus_request.lab_batch.ex_no,
-    )
-
-    students = Student_cgpa.objects.using("rit_cgpatrack").all()
-    student_dict = {student.reg_no: student.student_name for student in students}
-
-    lab_batch_students = []
-    for assignment in lab_batch_assignments:
-        student_id = assignment.student_id
-        student_name = student_dict.get(student_id, "Unknown")
-        lab_batch_students.append({
-            "student_id": student_id,
-            "student_name": student_name,
-            "department": assignment.department,
-            "section": assignment.section,
-            "assessment": assignment.assessment,
         })
 
-    # Lab Batch Students Table
-    y_position -= len(table_data) * 20 + 50  # Adjust position after the previous table
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, y_position, "Lab Batch Students:")
+    # Fetch course codes for dropdown
+    course_codes = LabExercise.objects.filter(department__iexact=mapped_department).values_list("course_code", flat=True).distinct()
 
-    y_position -= 20
-    student_table_data = [["Student ID", "Student Name", "Department", "Section", "Assessment"]]
-    for student in lab_batch_students:
-        student_table_data.append([
-            student["student_id"],
-            student["student_name"],
-            student["department"],
-            student["section"],
-            student["assessment"],
-        ])
-
-    student_table = Table(student_table_data, colWidths=[100, 150, 100, 80, 100])
-    student_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 5),
-        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-    ]))
-
-    student_table.wrapOn(p, width, height)
-    student_table.drawOn(p, 50, y_position - len(student_table_data) * 20)
-
-    # Finalize
-    p.showPage()
-    p.save()
-
-    return response
+    # Step 5: Pass to template
+    context = {
+        "student_payment_data": filtered_students,
+        "course_codes": course_codes,
+        "reg_no_filter": reg_no_filter,
+        "course_code_filter": course_code_filter
+    }
+    
+    return render(request, "technician/review_payment_receipt.html", context)
 
 
 
@@ -2774,7 +2848,7 @@ def hod_dashboard(request):
 
 # Get distinct experiment names from LabExercise
     experiment_names = LabExercise.objects.filter(department__iexact=student_department) \
-    .order_by("Ex_no").values_list("Ex_no", flat=True).distinct()
+    .order_by("Ex_no").values_list("Ex_title", flat=True).distinct()
 
 
     context = {
@@ -2826,6 +2900,8 @@ def approve_request(request):
             return JsonResponse({"success": False, "error": str(e)})
 
     return JsonResponse({"success": False, "error": "Invalid request method."})
+
+
 
 
 def faculty_logout(request):

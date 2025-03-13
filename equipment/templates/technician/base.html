@@ -78,62 +78,85 @@
         </div>
         <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-                <a href="{% url 'technician_dashboard' %}" class="nav-link sidebar-link {% if page_name == 'technician_dashboard' %}active{% endif %}">
+                <a href="{% url 'technician_dashboard' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/technician_dashboard' %}active{% endif %}">
                     <i class="fa fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
             </li>
+            
             <li class="nav-item">
-                <a href="{% url 'damaged_apparatus' %}" class="nav-link sidebar-link {% if page_name == 'damaged_apparatus' %}active{% endif %}">
+                <a href="{% url 'damaged_apparatus' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/damaged_apparatus/' %}active{% endif %}">
                     <i class="fas fa-exclamation-triangle mr-3"></i> Damaged Apparatus
                 </a>
             </li>
+            
+            
             <li class="nav-item">
-                <a href="{% url 'payment_status' %}" class="nav-link sidebar-link">
+                <a href="{% url 'payment_status' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/payment_status/' %}active{% endif %}">
                     <i class="fas fa-money-bill-wave mr-3"></i> Payment Status
                 </a>
             </li>
+            
             <li class="nav-item">
-                <a href="{% url 'review_payment_receipt' %}" class="nav-link sidebar-link">
+                <a href="{% url 'review_payment_receipt' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/review_payment_receipt' %}active{% endif %}">
                     <i class="fa-solid fa-file-invoice-dollar mr-3"></i> Review Payment Receipts
                 </a>
             </li>
             
+            
             <li class="nav-item">
-                <a href="{% url 'add_subject_type' %}" class="nav-link sidebar-link">
+                <a href="{% url 'add_subject_type' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/add_subject' %}active{% endif %}">
                     <i class="fa fa-user mr-3"></i> Add Subject
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'add_category' %}" class="nav-link sidebar-link">
-                    <i class="fa fa-file-alt mr-3"></i> Add Category
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'add_course' %}" class="nav-link sidebar-link">
-                    <i class="fa fa-box mr-3"></i> Add Course
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'add_lab_exercise' %}" class="nav-link sidebar-link">
-                    <i class="fas fa-microscope mr-3"></i> Add Lab Exercise
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'add_apparatus' %}" class="nav-link sidebar-link">
-                    <i class="fa fa-plus-circle mr-3"></i> Add Apparatus
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'add_batch' %}" class="nav-link sidebar-link">
-                    <i class="fas fa-users mr-3"></i>  Add Batch
                 </a>
             </li>
             
             <li class="nav-item">
-                <a href="{% url 'view_batches' %}" class="nav-link sidebar-link">
+                <a href="{% url 'add_category' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/add_category' %}active{% endif %}">
+                    <i class="fa fa-file-alt mr-3"></i> Add Category
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'add_course' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/add_course' %}active{% endif %}">
+                    <i class="fa fa-box mr-3"></i> Add Course
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'add_lab_exercise' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/add_lab_exercise' %}active{% endif %}">
+                    <i class="fas fa-microscope mr-3"></i> Add Lab Exercise
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'add_apparatus' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/add_apparatus' %}active{% endif %}">
+                    <i class="fa fa-plus-circle mr-3"></i> Add Apparatus
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="{% url 'add_batch' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/add_batch' %}active{% endif %}">
+                    <i class="fas fa-users mr-3"></i> Add Batch
+                </a>
+            </li>
+            
+            
+            <li class="nav-item">
+                <a href="{% url 'view_batches' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/view_batches' %}active{% endif %}">
                     <i class="fa fa-eye mr-3"></i> View Batches
                 </a>
             </li>
+            
             
             <li class="nav-item">
                 <a href="{% url 'technician_logout' %}" class="nav-link sidebar-link">
