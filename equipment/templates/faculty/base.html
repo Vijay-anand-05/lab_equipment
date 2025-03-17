@@ -75,12 +75,38 @@
             <h4 class="m-0">RIT</h4>
             <p class="font-weight-normal text-muted mb-0">Ramco Institute of Technology</p>
         </div>
+        
         <ul class="nav flex-column bg-white mb-0">
-            <li class="nav-item">
-                <a href="{% url 'hod_dashboard' %}" class="nav-link sidebar-link ">
+            
+            {% if role|lower  == "hod" %}
+                <li class="nav-item">
+                <a href="{% url 'hod_dashboard' %}" class="nav-link sidebar-link {% if request.path == '/hod/hod_dashboard' %}active{% endif %}">
                     <i class="fa fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
             </li>
+            {% endif %}
+                
+            
+            
+            {% if role|lower == "principal" %}
+            <li class="nav-item">
+                <a href="{% url 'principle_dashboard' %}" class="nav-link sidebar-link 
+                {% if request.path == '/principle/principle_dashboard/' %}active{% endif %}" >
+                    <i class="fa fa-tachometer-alt mr-3"></i> Dashboard
+                </a>
+            </li>
+                
+            {% endif %}
+            {% if role|lower == "vice_principal" %}
+    <li class="nav-item">
+        <a href="{% url 'vice_principle_dashboard' %}" class="nav-link sidebar-link 
+        {% if request.resolver_match.url_name == 'vice_principle_dashboard' %}active{% endif %}">
+            <i class="fa fa-tachometer-alt mr-3"></i> Dashboard
+        </a>
+    </li>
+{% endif %}
+
+                
             
             
             <li class="nav-item">
@@ -102,6 +128,16 @@
         {% block hod_dashboard %}
             
         {% endblock hod_dashboard %}
+
+        
+        {% block principle_dashboard %}
+            
+        {% endblock principle_dashboard %}
+
+        {% block vice_principle_dashboard %}
+            
+        {% endblock vice_principle_dashboard %}
+            
             
             
 

@@ -1,4 +1,4 @@
-{% extends 'faculty/hod/base.html' %}
+{% extends 'faculty/base.html' %}
 
 {% block hod_dashboard %}
 <div class="container mt-4">
@@ -241,7 +241,7 @@
             },
             success: function (response) {
                 if (response.success) {
-                    alert("Request approved successfully!");
+                    alert("✅ Request approved successfully!");
                     location.reload();
                 } else {
                     alert("Failed to approve request: " + response.error);

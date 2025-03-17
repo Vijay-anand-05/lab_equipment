@@ -75,6 +75,7 @@ from .models import Student_cgpa, LabBatchAssignment
 
 @student_required  # Ensure the user is logged in as a student.
 def student_dashboard(request):
+    page_name = "student_dashboard"
     student_regno = request.session.get("student_regno")
     
     if not student_regno:
@@ -119,6 +120,7 @@ def student_dashboard(request):
         "student_details": student_details,
         "student_assignments": student_assignments,  # List of assignments
         "lab_batch_members": lab_batch_members,  # Members grouped by course & batch
+        "page_name" : page_name
     }
     return render(request, "student/student_dashboard.html", context)
 
@@ -419,7 +421,7 @@ import base64
 from io import BytesIO
 from django.shortcuts import render, redirect
 from django.db.models import Sum
-from django.contrib import messages  # Import messages
+from django.contrib import messages
 from .models import Student_cgpa, Payment, ApparatusRequest, LabBatchAssignment
 from .forms import PaymentProofForm
 
@@ -490,7 +492,9 @@ def payment_upload(request):
         form = PaymentProofForm(request.POST, request.FILES, instance=payment)
         if form.is_valid():
             form.save()
+            
             messages.success(request, "Payment proof uploaded successfully!")
+            
             return redirect("payment_upload")  # Refresh page after successful upload
         else:
             messages.error(request, "Error uploading payment proof. Please check your file and try again.")
@@ -518,6 +522,7 @@ def payment_upload(request):
     )
 
 
+
 def upload_qr(request):
     return render(request, "student/upload_qr.html")
 
@@ -536,41 +541,48 @@ def student_logout(request):
 ###################################faculty######################################
 
 
+from django.shortcuts import render, redirect
+# from your_app.models import User  # Ensure correct import
+# from your_app.utils import encrypt_password  # Ensure correct import
+
 def faculty_login(request):
     if request.method == "POST":
-        username = request.POST.get("username")  # This will map to `staff_id`
+        username = request.POST.get("username")  # Maps to `staff_id`
         password = request.POST.get("password")
+        selected_role = request.POST.get("role")  # Get role from form
 
-        print(
-            f"Attempting to log in with staff_id: {username} and password: {password}"
-        )
-        
-        # Custom authentication check
+        print(f"Attempting to log in with staff_id: {username}, role: {selected_role}")
+
         try:
-            user = User.objects.using("rit_e_approval").get(staff_id=username)
-            if encrypt_password(password) == user.Password:
-                if user.role == "HOD":
-                    
-                    print(encrypt_password(password), user.Password)  # Assuming passwords are hashed
-                    print("Authentication successful!")
+            users = User.objects.using("rit_e_approval").filter(staff_id=username, role=selected_role)
+            print(users)
 
-                # Create a session or any custom login logic
-                    request.session["user_id"] = user.id  # Store user ID in session
-                    request.session["role"] = user.role  # Store the role if needed
+            if not users.exists():
+                print("Authentication failed! User not found or role mismatch.")
+                return render(request, "faculty_login.html", {"error": "Invalid credentials!"})
 
-                    return redirect("hod_dashboard")  # Redirect to the appropriate page
-                else:
-                    print('failed')
-            else:
-                print("Authentication failed! Incorrect password.")
-        except User.DoesNotExist:
-            print("Authentication failed! User not found.")
+            for user in users:
+                if encrypt_password(password) == user.Password:
+                    request.session["user_id"] = user.id  
+                    request.session["role"] = user.role  
+
+                    print(f"Authentication successful for {user.role}!")
+
+                    if user.role == "HOD":
+                        return redirect("hod_dashboard")
+                    elif user.role == "Principal":
+                        return redirect("principle_dashboard")
+                    elif user.role == "Vice_Principal":
+                        return redirect("vice_principle_dashboard")
+
+            print("Authentication failed! Incorrect password.")
+
+        except Exception as e:
+            print(f"Database error: {e}")
 
         return render(request, "faculty_login.html", {"error": "Invalid credentials!"})
 
     return render(request, "faculty_login.html")
-
-
 
 
 from django.contrib.auth.decorators import login_required
@@ -698,6 +710,22 @@ def technician_login(request):
     return render(request, "technician_login.html")
 
 
+from django.shortcuts import redirect
+from functools import wraps
+
+def technician_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        user_id = request.session.get("user_id")
+        user_role = request.session.get("user_role")
+
+        if not user_id or user_role not in ["Lab_Incharge", "Technician"]:
+            return redirect("technician_login")  # Redirect to login if not authenticated
+
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
 
 import json
 from datetime import timedelta
@@ -797,6 +825,7 @@ DEPARTMENT_MAPPING = {
     "MECHANICAL ENGINEERING": "B.E ME",
 }
 
+@technician_required
 def technician_dashboard(request):
     user_id = request.session.get("user_id", None)
     if user_id is None:
@@ -929,7 +958,7 @@ def get_student_department(reg_no):
     except Student_cgpa.DoesNotExist:
         return None  # or handle the case where the student does not exist
 
-
+@technician_required
 @csrf_exempt  # Use proper CSRF handling in production
 def accept_or_reject_apparatus_request(request):
     user_id = request.session.get("user_id", None)
@@ -996,7 +1025,7 @@ def accept_or_reject_apparatus_request(request):
 
     return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
 
-
+@technician_required
 @csrf_exempt  # Use proper CSRF handling in production
 def update_apparatus_request_status(request):
     if request.method == "POST":
@@ -1054,7 +1083,7 @@ from .models import SubjectType, Category
 from django.contrib.auth.decorators import login_required
 
 
-  
+@technician_required
 def add_subject_type(request):
     if request.method == "POST":
         type_name = request.POST.get("type_name")
@@ -1102,7 +1131,7 @@ from equipment.models import *
 from .forms import CourseForm
 
 
-  
+@technician_required
 def add_course(request):
     # Get the logged-in technician user ID
     user_id = request.session.get("user_id", None)
@@ -1157,6 +1186,8 @@ from django.contrib import messages
 from .models import LabExercise, Course
 from .forms import LabExerciseForm
 
+
+@technician_required
 def add_lab_exercise(request):
     # Get the logged-in technician user ID
     user_id = request.session.get("user_id", None)
@@ -1248,6 +1279,7 @@ DEPARTMENT_MAPPING = {
     "MECHANICAL ENGINEERING": "B.E ME",
 }
 
+@technician_required
 def add_apparatus(request):
     # 🔹 Get the logged-in Technician user ID
     user_id = request.session.get("user_id", None)
@@ -1392,6 +1424,8 @@ DEPARTMENT_MAPPING = {
     "MECHANICAL ENGINEERING": "B.E ME",
 }
 
+
+@technician_required
 def add_batch(request):
     # 🔹 Get the logged-in Technician user ID
     user_id = request.session.get("user_id", None)
@@ -1585,6 +1619,8 @@ DEPARTMENT_MAPPING = {
     "MECHANICAL ENGINEERING": "B.E ME",
 }
 
+
+@technician_required
 def view_batches(request):
     """
     Display Lab Batch Assignments for the Technician's department only when filters are applied.
@@ -1638,7 +1674,7 @@ def view_batches(request):
     )
     departments = (
         LabExercise.objects.filter(department=mapped_department)
-        .values_list("course_code", flat=True)
+        .values_list("department", flat=True)
         .distinct()
         .order_by("course_code")
     )
@@ -1686,6 +1722,7 @@ DEPARTMENT_MAPPING = {
     "MECHANICAL ENGINEERING": "B.E ME",
 }
 
+@technician_required
 def edit_lab_batch_assignment(request, assignment_id):
     """
     Allow a technician to edit a Lab Batch Assignment, restricting access to their department only.
@@ -1942,6 +1979,7 @@ DEPARTMENT_MAPPING = {
     "MECHANICAL ENGINEERING": "B.E ME",
 }
 
+@technician_required
 def damaged_apparatus(request):
     """
     Technician can view, verify, and update damaged apparatus records from their department.
@@ -2177,6 +2215,8 @@ from django.template.loader import get_template
 from django.db.models import Count, Sum
 from .models import LabBatchAssignment, LabExercise, ApparatusRequest, ApparatusRequestDamage
 
+
+@technician_required
 def payment_status(request):
     """
     Technician can view and filter payment statuses for damaged apparatus.
@@ -2295,6 +2335,7 @@ import os
 from PIL import Image
 from django.conf import settings
 
+# @technician_required
 def generate_payment_pdf(request, request_id):
     apparatus_request = get_object_or_404(ApparatusRequest, id=request_id)
 
@@ -2305,10 +2346,10 @@ def generate_payment_pdf(request, request_id):
     width, height = A4
 
     # Load Logo
-    logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "image.png")
+    logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "image_1.png")
     if os.path.exists(logo_path):
         logo = ImageReader(logo_path)
-        p.drawImage(logo, 50, height - 100, width=100, height=80, mask="auto")
+        p.drawImage(logo, 50, height - 100, width=100, height=100, mask="auto")
 
     # Title
     p.setFont("Helvetica-Bold", 16)
@@ -2584,7 +2625,7 @@ from django.db.models import Sum
 from .models import Payment, ApparatusRequestDamage, User, Student_cgpa, LabExercise
 
 # Department Mapping
-
+@technician_required
 def review_payment_receipt(request):
     page_name = "review_payment_receipt"
     user_id = request.session.get("user_id")
@@ -2669,10 +2710,13 @@ def review_payment_receipt(request):
 
 
 
+
 from django.contrib.auth import logout
 
 from django.shortcuts import redirect
 
+
+@technician_required
 def technician_logout(request):
     request.session.flush()  # Clears the session
     return redirect("/technician_login")  # Redirects to login without 'next'
@@ -2730,6 +2774,7 @@ def hod_dashboard(request):
 
     # Retrieve user details
     user_data = User.objects.using("rit_e_approval").get(id=user_id)
+    print(user_data.role)
     
     # Get the HOD's department and map it to the student department format
     hod_department = user_data.Department.strip().upper()  # Ensure consistency
@@ -2746,7 +2791,7 @@ def hod_dashboard(request):
     qs = ApparatusRequest.objects.filter(
         status="Damaged",
         hod_approval=False,
-        # student__department__iexact=student_department  # Filtering by mapped department
+        apparatus__department=student_department  # Filtering by mapped department
     ).select_related("student", "lab_batch", "apparatus")
 
     # Apply additional filters if provided
@@ -2859,9 +2904,10 @@ def hod_dashboard(request):
         "sections": sections,
         "course_codes": course_codes,
         "experiment_names": experiment_names,
+        "role" : user_data.role,
     }
 
-    return render(request, "faculty/hod/hod_dashboard.html", context)
+    return render(request, "faculty/hod_dashboard.html", context)
 
 
 
@@ -2910,4 +2956,159 @@ def faculty_logout(request):
 
 
 
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+from .models import User, ApparatusRequest, ApparatusRequestDamage, LabBatchAssignment
+# from .constants import DEPARTMENT_MAPPING
 
+def principle_dashboard(request):
+    """
+    Principal can view and filter damaged apparatus requests across all departments.
+    """
+    # Principal Authentication
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("/hod_login")
+
+    user_data = User.objects.using("rit_e_approval").get(id=user_id)
+    
+
+    # Get filter values from request
+    department = request.GET.get("department")
+    payment_status = request.GET.get("payment_status")
+
+    # Base queryset for all damaged apparatus requests
+    qs = ApparatusRequest.objects.filter(status="Damaged")
+
+    if department:
+        qs = qs.filter(apparatus__department=department)
+    if payment_status:
+        qs = qs.filter(verified=(payment_status == "paid"))
+
+    grouped_list = []
+    grouped = (
+        qs.values(
+            "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
+            "lab_batch__lab_batch_no", "status", "verified"
+        )
+        .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))
+        .order_by("student__reg_no", "lab_batch__lab_batch_no")
+    )
+
+    for group in grouped:
+        details_qs = ApparatusRequest.objects.filter(
+            student__reg_no=group["student__reg_no"],
+            lab_batch__course_code=group["lab_batch__course_code"],
+            apparatus__ex_no=group["apparatus__ex_no"],
+            apparatus__department=group["apparatus__department"],
+            lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"],
+        )
+
+        first_request = details_qs.first()
+        group["request_id"] = first_request.id if first_request else None
+        group["remarks"] = first_request.technician_remarks if first_request else ""
+
+        damage_details = {
+            entry.apparatus_request_id: {"fine_amount": entry.fine_amount or 0, "remarks": entry.remarks or ""}
+            for entry in ApparatusRequestDamage.objects.filter(apparatus_request__in=details_qs)
+        }
+
+        group["apparatus_list"] = [
+            {
+                "id": detail.id,
+                "apparatus_name": detail.apparatus.apparatus_name,
+                "fine_amount": damage_details.get(detail.id, {}).get("fine_amount", 0),
+                "remarks": damage_details.get(detail.id, {}).get("remarks", ""),
+            }
+            for detail in details_qs if detail.apparatus
+        ]
+
+        grouped_list.append(group)
+
+    # Fetch all unique departments for filtering
+    departments = LabBatchAssignment.objects.values_list("department", flat=True).distinct().order_by("department")
+
+    context = {
+        "departments": departments,  # Now shows all departments
+        "damaged_apparatus_requests": grouped_list,
+        "page_name": "principle_dashboard",
+        "role" : user_data.role
+    }
+    return render(request, "faculty/principle_dashboard.html", context)
+
+
+
+def vice_principle_dashboard(request):
+    """
+    Principal can view and filter damaged apparatus requests across all departments.
+    """
+    # Principal Authentication
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("home")
+
+    user_data = User.objects.using("rit_e_approval").get(id=user_id)
+    
+
+    # Get filter values from request
+    department = request.GET.get("department")
+    payment_status = request.GET.get("payment_status")
+
+    # Base queryset for all damaged apparatus requests
+    qs = ApparatusRequest.objects.filter(status="Damaged")
+
+    if department:
+        qs = qs.filter(apparatus__department=department)
+    if payment_status:
+        qs = qs.filter(verified=(payment_status == "paid"))
+
+    grouped_list = []
+    grouped = (
+        qs.values(
+            "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
+            "lab_batch__lab_batch_no", "status", "verified"
+        )
+        .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))
+        .order_by("student__reg_no", "lab_batch__lab_batch_no")
+    )
+
+    for group in grouped:
+        details_qs = ApparatusRequest.objects.filter(
+            student__reg_no=group["student__reg_no"],
+            lab_batch__course_code=group["lab_batch__course_code"],
+            apparatus__ex_no=group["apparatus__ex_no"],
+            apparatus__department=group["apparatus__department"],
+            lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"],
+        )
+
+        first_request = details_qs.first()
+        group["request_id"] = first_request.id if first_request else None
+        group["remarks"] = first_request.technician_remarks if first_request else ""
+
+        damage_details = {
+            entry.apparatus_request_id: {"fine_amount": entry.fine_amount or 0, "remarks": entry.remarks or ""}
+            for entry in ApparatusRequestDamage.objects.filter(apparatus_request__in=details_qs)
+        }
+
+        group["apparatus_list"] = [
+            {
+                "id": detail.id,
+                "apparatus_name": detail.apparatus.apparatus_name,
+                "fine_amount": damage_details.get(detail.id, {}).get("fine_amount", 0),
+                "remarks": damage_details.get(detail.id, {}).get("remarks", ""),
+            }
+            for detail in details_qs if detail.apparatus
+        ]
+
+        grouped_list.append(group)
+
+    # Fetch all unique departments for filtering
+    departments = LabBatchAssignment.objects.values_list("department", flat=True).distinct().order_by("department")
+
+    context = {
+        "departments": departments,  # Now shows all departments
+        "damaged_apparatus_requests": grouped_list,
+        "page_name": "principle_dashboard",
+        "role" : user_data.role
+    }
+    return render(request, "faculty/vice_principle_dashboard.html", context)

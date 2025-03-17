@@ -68,5 +68,13 @@ urlpatterns = [
     
     path('faculty/faculty_logout', views.faculty_logout, name = 'faculty_logout'),
     
+    
+    
+    
+    path("principle/principle_dashboard/", views.principle_dashboard, name = "principle_dashboard"),
+    path("vice_principle/vice_principle_dashboard", views.vice_principle_dashboard, name = "vice_principle_dashboard"),
+    
+    
+    
 
 ]

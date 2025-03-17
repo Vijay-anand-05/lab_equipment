@@ -1,85 +1,132 @@
 {% extends 'student/base.html' %}
 
-
-
 {% block student_profile %}
+<!-- Full-Page Layout -->
+<div class="container-fluid vh-100 d-flex flex-column justify-content-center align-items-center bg-light" style="overflow: hidden;">
+    <!-- Big Heading -->
+    <p class="display-1 fw-bold animate__animated animate__fadeInDown mb-5">
+        Student Profile
+    </p>
 
+    <!-- Profile Card -->
+    <div class="card shadow-lg animate__animated animate__fadeInUp hover-scale" style="width: 24rem;">
+        <div class="card-body text-center">
+            <!-- Profile Image (Optional) -->
+            {% comment %} <img src="{% static 'images/default-profile.jpg' %}" alt="Profile Image" class="rounded-circle mb-3" width="100" height="100"> {% endcomment %}
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-        }
-        .profile-card {
-            max-width: 400px;
-            margin: 50px auto;
-            background: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            text-align: center;
-        }
-        .profile-img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 15px;
-            border: 3px solid #007bff;
-        }
-        .profile-card h3 {
-            font-size: 22px;
-            font-weight: bold;
-            color: #333;
-        }
-        .profile-card p {
-            font-size: 14px;
-            color: #666;
-        }
-        .info-item {
-            display: flex;
-            align-items: center;
-            justify-content: start;
-            margin: 8px 0;
-            font-size: 16px;
-        }
-        .info-item i {
-            width: 25px;
-            color: #007bff;
-        }
-    </style>
+            <!-- Student Name -->
+            <h3 class="card-title mb-3 animate__animated animate__fadeIn">{{ student_details.name }}</h3>
 
+            <!-- Registration Number with Letter Animation -->
+            <p class="card-text text-muted mb-4 animate__animated animate__fadeIn animate__delay-1s">
+                <strong>Registration No:</strong>
+                <span id="reg-no-animation" class="reg-no">{{ student_details.reg_no }}</span>
+            </p>
 
-    <div class="profile-card">
-        {% comment %} <img src="{% static 'images/default-profile.jpg' %}" alt="Profile Image" class="profile-img"> {% endcomment %}
-        <h3>{{ student_details.name }}</h3>
-        <p><strong>Registration No:</strong> {{ student_details.reg_no }}</p>
-        <div class="info-item">
-            <i class="fas fa-id-badge"></i>
-            <span><strong>Name:</strong> {{ student_details.student_name }}</span>
+            <!-- Student Details -->
+            <div class="text-start">
+                <!-- Name -->
+                <div class="d-flex align-items-center mb-3 animate__animated animate__fadeInLeft animate__delay-1s hover-item">
+                    <i class="fas fa-id-badge me-3 text-primary"></i>
+                    <span><strong>Name:</strong> {{ student_details.student_name }}</span>
+                </div>
+
+                <!-- Department -->
+                <div class="d-flex align-items-center mb-3 animate__animated animate__fadeInLeft animate__delay-2s hover-item">
+                    <i class="fas fa-graduation-cap me-3 text-primary"></i>
+                    <span><strong>Department:</strong> {{ student_details.department }}</span>
+                </div>
+
+                <!-- Batch -->
+                <div class="d-flex align-items-center mb-3 animate__animated animate__fadeInLeft animate__delay-3s hover-item">
+                    <i class="fas fa-calendar-alt me-3 text-primary"></i>
+                    <span><strong>Batch:</strong> {{ student_details.batch }}</span>
+                </div>
+
+                <!-- Entry Status (Optional) -->
+                {% comment %}
+                <div class="d-flex align-items-center mb-3 animate__animated animate__fadeInLeft animate__delay-4s hover-item">
+                    <i class="fas fa-user-tag me-3 text-primary"></i>
+                    <span><strong>Entry Status:</strong> {{ entry_status }}</span>
+                </div>
+                {% endcomment %}
+            </div>
         </div>
-
-        <div class="info-item">
-            <i class="fas fa-graduation-cap"></i>
-            <span><strong>Department:</strong> {{ student_details.department }}</span>
-        </div>
-        <div class="info-item">
-            <i class="fas fa-calendar-alt"></i>
-            <span><strong>Batch:</strong> {{ student_details.batch }}</span>
-        </div>
-        {% comment %} <div class="info-item">
-            <i class="fas fa-user-tag"></i>
-            <span><strong>Entry Status:</strong> {{ entry_status }}</span>
-        </div> {% endcomment %}
     </div>
+</div>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
+<!-- Custom CSS for Hover Effects and Animations -->
+<style>
+    /* Full-page layout */
+    .container-fluid {
+        background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+        overflow: hidden; /* Prevent scrolling */
+    }
 
+    /* Hover effect for the card */
+    .hover-scale {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
+    .hover-scale:hover {
+        transform: scale(1.02);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
 
+    /* Hover effect for individual items */
+    .hover-item {
+        transition: transform 0.3s ease, background-color 0.3s ease;
+        padding: 8px;
+        border-radius: 8px;
+    }
 
-    
+    .hover-item:hover {
+        transform: scale(1.02);
+        background-color: #f8f9fa;
+    }
+
+    /* Registration Number Animation */
+    .reg-no {
+        display: inline-block;
+        font-size: 2.5rem; /* Big font size */
+        font-weight: bold;
+    }
+
+    .reg-no span {
+        display: inline-block;
+        opacity: 0;
+        animation: fadeInLetter 0.5s forwards;
+    }
+
+    @keyframes fadeInLetter {
+        to {
+            opacity: 1;
+        }
+    }
+</style>
+
+<!-- JavaScript for Registration Number Animation -->
+<script>
+    // Function to animate registration number letter by letter
+    function animateRegistrationNumber() {
+        const regNoElement = document.getElementById('reg-no-animation');
+        const regNoText = regNoElement.textContent;
+        regNoElement.innerHTML = ''; // Clear the content
+
+        // Wrap each letter in a span and add animation delay
+        regNoText.split('').forEach((letter, index) => {
+            const span = document.createElement('span');
+            span.textContent = letter;
+            span.style.animationDelay = `${index * 0.2}s`; // Delay each letter
+            regNoElement.appendChild(span);
+        });
+    }
+
+    // Run the animation when the page loads
+    document.addEventListener('DOMContentLoaded', animateRegistrationNumber);
+</script>
 {% endblock student_profile %}
-    

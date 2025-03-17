@@ -116,9 +116,9 @@
                     <th>Lab Batch No</th>
                     <th>HOD Approved</th>
                     <th>Action</th>
-                    {% if request.GET.approval_status == "approved" %}
+                    {% comment %} {% if request.GET.approval_status == "approved" %} {% endcomment %}
                     <th>Payment Verification</th>
-                    {% endif %}
+                    {% comment %} {% endif %} {% endcomment %}
                 </tr>
             </thead>
             

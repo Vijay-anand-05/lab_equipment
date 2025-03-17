@@ -64,28 +64,32 @@
         </div>
         <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-                <a href="{% url 'student_profile' %}" class="nav-link">
+                <a href="{% url 'student_profile' %}" class="nav-link {% if request.path == '/student/student_profile' %}active{% endif %}">
                     <i class="fas fa-user-circle mr-3"></i> Profile
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{% url 'student_dashboard' %}" class="nav-link">
+            
+                {% comment %} {{request.path}} {% endcomment %}
+            <li class="nav-item sidebar-link ">
+                <a href="{% url 'student_dashboard' %}" class="nav-link {% if request.path == '/student/student_dashbord/' %}active{% endif %}">
                     <i class="fas fa-chalkboard mr-3"></i> Apparatus Issue Dashboard
                 </a>
             </li>
+            
+            
             <li class="nav-item">
-                <a href="{% url 'requested_apparatus' %}" class="nav-link">
+                <a href="{% url 'requested_apparatus' %}" class="nav-link {% if request.path == '/student/requested_apparatus/' %}active{% endif %}">
                     <i class="fas fa-flask mr-3"></i> Requested Apparatus
                 </a>
             </li>
             
             <li class="nav-item">
-                <a href="{% url 'apparatus_request' %}" class="nav-link">
+                <a href="{% url 'apparatus_request' %}" class="nav-link {% if request.path == '/student/apparatus_request' %}active{% endif %}">
                     <i class="fas fa-file-signature mr-3"></i> Apparatus Request
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'payment_upload' %}" class="nav-link">
+                <a href="{% url 'payment_upload' %}" class="nav-link {% if request.path == '/student/payment_upload/' %}active{% endif %}">
                     <i class="fas fa-money-check-alt mr-3"></i> Payments & Upload
                 </a>
             </li>
