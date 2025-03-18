@@ -106,6 +106,8 @@ class Category(models.Model):
 
 class Course(models.Model):
 
+    # technician = models.ForeignKey(User, on_delete=models.CASCADE)
+    technician_id = models.CharField(max_length=100,null=True, blank=True)  # If storing ID
     batch = models.CharField(max_length=50)
     regulations = models.CharField(max_length=20)
     # degree = models.CharField(max_length=10)
@@ -138,6 +140,7 @@ class Department(models.Model):  # Keeping the lowercase model name
 
 
 class LabExercise(models.Model):
+    technician_id = models.CharField(max_length=100,null=True, blank=True)  # If storing ID
     Ex_no = models.CharField(max_length=50)  # Exercise Code
     practical_course = models.CharField(max_length=255)
     course_code = models.CharField(max_length=10)
@@ -153,6 +156,7 @@ class LabExercise(models.Model):
 
 
 class Apparatus(models.Model):
+    technician_id = models.CharField(max_length=100,null=True, blank=True)  # If storing ID
     ex_no = models.CharField(max_length=50)
     course_code = models.CharField(max_length=50)
     practical_course = models.CharField(max_length=255)
@@ -177,7 +181,7 @@ class LabBatchAssignment(models.Model):
     Now includes an 'assessment' field and also stores the student's
     department and section at the time of assignment.
     """
-
+    technician_id = models.CharField(max_length=100,null=True, blank=True)  # If storing ID 
     student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE, related_name="lab_assignments", db_constraint=False)
     lab_batch_no = models.CharField(max_length=50)
     course_code = models.CharField(max_length=10)
@@ -206,7 +210,7 @@ class ApparatusRequest(models.Model):
     remarks = models.TextField(blank=True, null=True)
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     technician_remarks = models.TextField(null=True, blank=True)
-    technician_staff_id = models.CharField(max_length=100, null=True, blank=True)
+    # technician_staff_id = models.CharField(max_length=100, null=True, blank=True)
     student = models.ForeignKey(Student_cgpa, on_delete=models.CASCADE, db_constraint=False)
     lab_batch = models.ForeignKey(LabBatchAssignment, on_delete=models.CASCADE, null=True, blank=True)
     apparatus = models.ForeignKey(Apparatus, on_delete=models.CASCADE, null=True, blank=True)
@@ -223,7 +227,7 @@ class ApparatusRequest(models.Model):
         ],
         default="Pending",
     )
-    technician = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    technician_id = models.CharField(max_length=100,null=True, blank=True)
     technician_remarks = models.TextField(blank=True, null=True)
     accepted_message = models.TextField(blank=True, null=True)
     return_date = models.DateTimeField(null=True, blank=True)
@@ -250,6 +254,7 @@ class ApparatusRequest(models.Model):
 
 
 class ApparatusRequestDamage(models.Model):
+    technician_id = models.CharField(max_length=100,null=True, blank=True)  # If storing ID 
     apparatus_request = models.ForeignKey(ApparatusRequest, on_delete=models.CASCADE)
     apparatus = models.ForeignKey(Apparatus, on_delete=models.CASCADE)
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -273,7 +278,7 @@ class Payment(models.Model):
         related_name="payments", 
         db_constraint=False
     )
-
+    technician_id = models.CharField(max_length=100,null=True, blank=True) 
     damaged_apparatus = models.ManyToManyField(ApparatusRequestDamage, blank=True)
     
     payment_proof = models.ImageField(upload_to="payment_proofs/", blank=True, null=True)  

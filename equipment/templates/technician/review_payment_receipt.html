@@ -71,8 +71,10 @@
                     <th>Payment Proof</th>
                 </tr>
             </thead>
+            {{ student.payment_proof }}
             <tbody>
                 {% for student in student_payment_data %}
+                {% comment %} {{ student.payment_proof }} {% endcomment %}
                 <tr>
                     <td>{{ student.reg_no }}</td>
                     <td>{{ student.section }}</td>
@@ -81,7 +83,7 @@
                     <td class="text-center">
                         {% if student.payment_proof %}
                             <!-- Thumbnail Preview -->
-                            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal">
+                            <a href="" data-bs-toggle="modal" data-bs-target="#imageModal">
                                 <img src="{{ student.payment_proof }}" alt="Payment Proof" class="img-thumbnail proof-image">
                             </a>
                             

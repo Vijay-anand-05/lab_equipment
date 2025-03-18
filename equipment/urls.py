@@ -14,6 +14,7 @@ urlpatterns = [
     path("student/requested_apparatus/", views.requested_apparatus_view, name="requested_apparatus"),
     path('get_apparatus_details/', views.get_apparatus_details, name='get_apparatus_details'),
     path('student/payment_upload/', views.payment_upload, name='payment_upload'),
+    path('student/manual', views.manual, name = "manual"),
     
     path('student/qr_code/', views.upload_qr, name='qr_code'),
 

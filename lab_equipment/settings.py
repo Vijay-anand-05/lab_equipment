@@ -175,16 +175,20 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+import os
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = '/static/'
+
+# Directories where Django looks for additional static files
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'equipment', 'static'),
+    os.path.join(BASE_DIR, 'equipment', 'static'),  # This is correct
 ]
+
+# This is required for collectstatic to work
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Ensure this directory exists
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

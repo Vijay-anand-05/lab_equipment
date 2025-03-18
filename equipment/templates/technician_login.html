@@ -9,7 +9,7 @@
     <title>Ramco Institute of Technology</title>
     <style>
         body {
-            background-image: url("{% static 'images/background.jpg' %}");
+            background-image: url("static/images/background.jpg");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -17,66 +17,10 @@
     </style>
 </head>
 <body>
-    <style>
-        /* Keyframes for fade-in animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Keyframes for button hover animation */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        /* Apply fade-in animation to the form */
-        .container-login {
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        /* Form group animation */
-        .form-group {
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.5s ease-in-out forwards;
-        }
-
-        /* Delay animations for each form group */
-        .form-group:nth-child(1) { animation-delay: 0.2s; }
-        .form-group:nth-child(2) { animation-delay: 0.4s; }
-        .form-group:nth-child(3) { animation-delay: 0.6s; }
-
-        /* Button hover effect */
-        .btn-primary {
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: #003f5c;
-            animation: pulse 1s infinite;
-        }
-
-        /* Input field focus effect */
-        .form-control {
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .form-control:focus {
-            border-color: #005073;
-            box-shadow: 0 0 5px rgba(0, 80, 115, 0.5);
-        }
-
-        /* Alert animation */
-        .alert {
-            opacity: 0;
-            transform: translateY(-20px);
-            animation: fadeIn 0.5s ease-in-out forwards;
-        }
-    </style>
-    <div class="rit"></div>
-    <img src="{% static 'images/rit.jpg' %}" alt="RIT Logo">
+    
+    
+    {% comment %} <div class="rit"></div> {% endcomment %}
+    <img src="static/images/rit.jpg" alt="RIT Logo">
     <div class="container">
         <br>
         <a href="{% url 'home' %}">
@@ -108,9 +52,7 @@
             </div>
         </div>
     
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+       
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

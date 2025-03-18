@@ -1,6 +1,7 @@
 {% extends 'student/base.html' %}
 
 {% block requested_apparatus %}
+{% load static %}
 <style>
   /* Overlay styles */
   #overlay {
@@ -79,7 +80,7 @@
                         <td>{{ group.apparatus__ex_no }}</td>
                         <td>{{ group.lab_batch__lab_batch_no }}</td>
                         <td>{{ group.lab_batch__course_code }}</td>
-                        <td>{{ group.lab_batch__practical_course }}</td>
+                        <td>{{ group.apparatus__practical_course }}</td>
                         <td>{{ group.apparatus__experiment_name }}</td>
                         <td>{{ group.apparatus_count }} items</td>
                         <td>
@@ -93,7 +94,12 @@
                             </button>
                         </td>
                     </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No requested apparatus found</td>
+                        </tr>
                     {% endfor %}
+                    
                 </tbody>
             </table>
         </div>
@@ -115,6 +121,13 @@
                 <div class="col-md-6">
                     <p><i class="fas fa-book me-1"></i> <strong>Course Code:</strong> <span id="group-course-code"></span></p>
                     <p><i class="fas fa-chalkboard-teacher me-1"></i> <strong>Practical Course:</strong> <span id="group-practical-course"></span></p>
+                    
+
+
+                </div>
+                <div class="col-md-6">
+                    <p><i class="fas fa-book me-1"></i> <strong>Experiment Name: </strong> <span id="group-experiment-name"></span></p>
+
                 </div>
             </div>
         </div>
@@ -153,7 +166,8 @@
             $("#group-ex-no").text(group.apparatus__ex_no);
             $("#group-batch-no").text(group.lab_batch__lab_batch_no);
             $("#group-course-code").text(group.lab_batch__course_code);
-            $("#group-practical-course").text(group.lab_batch__practical_course);
+            $("#group-practical-course").text(group.apparatus__practical_course);
+            $("#group-experiment-name").text(group.apparatus__experiment_name);
 
             var rowsHtml = "";
             if (!group.details || group.details.length === 0) {
