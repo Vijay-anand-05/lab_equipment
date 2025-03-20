@@ -1,9 +1,10 @@
 {% extends 'technician/base.html' %}
 
 {% block damaged_apparatus %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <div class="container mt-4">
     <!-- Flash Messages Section -->
-    {% if messages %}
+    {% comment %} {% if messages %}
         <div class="container mt-3">
             {% for message in messages %}
                 <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
@@ -12,7 +13,7 @@
                 </div>
             {% endfor %}
         </div>
-    {% endif %}
+    {% endif %} {% endcomment %}
 
     <!-- Flash Messages Animation -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -112,13 +113,14 @@
                     <th>Student Reg No</th>
                     <th>Course Code</th>
                     <th>Experiment No</th>
+                    <th>Experiment Date</th>
                     <th>Department</th>
                     <th>Lab Batch No</th>
                     <th>HOD Approved</th>
                     <th>Action</th>
-                    {% comment %} {% if request.GET.approval_status == "approved" %} {% endcomment %}
+                    {% if group.GET.approval_status == "approved" %}
                     <th>Payment Verification</th>
-                    {% comment %} {% endif %} {% endcomment %}
+                    {% endif %}
                 </tr>
             </thead>
             
@@ -128,6 +130,7 @@
                     <td>{{ group.student__reg_no }}</td>
                     <td>{{ group.lab_batch__course_code }}</td>
                     <td>{{ group.apparatus__ex_no }}</td>
+                    <td>{{ group.experiment_date }}</td>
                     <td>{{ group.apparatus__department }}</td>
                     <td>{{ group.lab_batch__lab_batch_no }}</td>
                     <td>{% if group.hod_approval %}Approved{% else %}Not Approved{% endif %}</td>

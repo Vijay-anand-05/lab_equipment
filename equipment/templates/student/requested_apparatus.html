@@ -69,8 +69,11 @@
                         <th><i class="fas fa-book me-1"></i> Course Code</th>
                         <th><i class="fas fa-chalkboard-teacher me-1"></i> Practical Course</th>
                         <th><i class="fas fa-vial me-1"></i> Experiment Name</th>
+                        <th><i class="fas fa-calendar-alt me-1"></i> Experiment Date</th>
                         <th><i class="fas fa-list me-1"></i> Apparatus Count</th>
                         <th><i class="fas fa-info-circle me-1"></i> Status</th>
+                        <th><i class="fa fa-inr me-1"></i> Payment</th>
+                        <th><i class="fas fa-file-pdf"></i> PDF</th>
                         <th><i class="fas fa-eye me-1"></i> Action</th>
                     </tr>
                 </thead>
@@ -82,12 +85,42 @@
                         <td>{{ group.lab_batch__course_code }}</td>
                         <td>{{ group.apparatus__practical_course }}</td>
                         <td>{{ group.apparatus__experiment_name }}</td>
+                        <td>{{ group.experiment_date }}</td>
                         <td>{{ group.apparatus_count }} items</td>
                         <td>
-                            <span class="badge {% if group.status == 'Accepted' %}bg-success{% else %}bg-warning{% endif %}">
+                            <span class="badge 
+                                {% if group.status == 'Accepted' %}bg-success
+                                {% elif group.status == 'Returned' %}bg-primary
+                                {% elif group.status == 'Damaged' %}bg-danger
+                                {% else %}bg-warning{% endif %}">
                                 {{ group.status }}
                             </span>
                         </td>
+                        
+                        <!-- Payment Column: Only show if status is "Damaged" -->
+                        <td>
+                            {% if group.status == "Damaged" %}
+                                {% if group.payment_status == "Paid" %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Not Paid</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span> <!-- Placeholder for "Accepted" & "Returned" -->
+                            {% endif %}
+                        </td>
+            
+                        <!-- PDF Column: Only show if status is "Damaged" and Paid -->
+                        <td>
+                            {% if group.status == "Damaged" and group.payment_status == "Paid" %}
+                                <a href="{% url 'generate_payment_pdf' group.request_id %}" target="_blank" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </a>
+                            {% else %}
+                                <span class="text-muted">—</span> <!-- Placeholder for "Accepted" & "Returned" -->
+                            {% endif %}
+                        </td>
+            
                         <td>
                             <button class="btn btn-outline-info view-details-btn" data-index="{{ forloop.counter0 }}">
                                 <i class="fas fa-eye"></i> View
@@ -95,13 +128,13 @@
                         </td>
                     </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center">No requested apparatus found</td>
-                        </tr>
+                    <tr>
+                        <td colspan="11" class="text-center">No requested apparatus found</td>
+                    </tr>
                     {% endfor %}
-                    
                 </tbody>
             </table>
+            
         </div>
     {% endif %}
 </div>

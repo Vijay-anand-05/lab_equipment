@@ -64,6 +64,8 @@ urlpatterns = [
     
     path('hod/hod_dashboard', views.hod_dashboard, name = "hod_dashboard"),
     path('hod/approve_request/', views.approve_request, name='approve_request'),
+    path("hod/hod_damaged_apparatus_view", views.hod_damaged_apparatus_view, name = "hod_damaged_apparatus_view"),
+    path("hod/hod_overview", views.hod_overview, name = "hod_overview"),
     
     
     

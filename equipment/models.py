@@ -24,13 +24,13 @@ class Student_cgpa(models.Model):
     department = models.CharField(max_length=100)
     section = models.CharField(
         max_length=10, blank=True, null=True
-    )  # New field for section
+    )  
     gender = models.CharField(
         max_length=10,
         choices=[("Male", "Male"), ("Female", "Female")],
         blank=True,
         null=True,
-    )  # New field for gender
+    ) 
     cgpa = models.FloatField()
     sslc = models.FloatField()
     hsc = models.CharField(max_length=20, blank=True, null=True)
@@ -150,9 +150,10 @@ class LabExercise(models.Model):
     batch = models.CharField(max_length=50)
     sem = models.IntegerField()
     department = models.CharField(max_length=50)
+    experiment_date = models.DateField(null=True, blank=True)
 
     def _str_(self):
-        return f"{self.title} ({self.lab.name})"
+        return f"{self.Ex_title} ({self.course_code}) - {self.experiment_date.strftime('%d-%m-%Y') if self.experiment_date else 'No Date'}"
 
 
 class Apparatus(models.Model):
@@ -165,11 +166,12 @@ class Apparatus(models.Model):
     batch = models.CharField(max_length=50)
     semester = models.IntegerField()
     apparatus_name = models.CharField(max_length=255)
-    range_specification = models.CharField(max_length=100, blank=True, null=True)
-    quantity_available = models.CharField(max_length=10)
+    range_specification = models.CharField(max_length=255, blank=True, null=True)
+    quantity_available = models.CharField(max_length=255)
     department = models.CharField(max_length=50)
     remarks = models.TextField(blank=True, null=True)
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    experiment_date = models.DateField(null=True, blank=True)
 
     class Meta:
         db_table = 'equipment_apparatus'  # Specify the correct table name
@@ -190,6 +192,7 @@ class LabBatchAssignment(models.Model):
     department = models.CharField(max_length=100, blank=True, null=True)
     section = models.CharField(max_length=10, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    experiment_date = models.DateField(null=True, blank=True)
 
     class Meta:
         db_table = "lab_batch_assignment"

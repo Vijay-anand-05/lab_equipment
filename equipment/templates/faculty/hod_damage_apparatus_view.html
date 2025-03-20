@@ -1,0 +1,88 @@
+{% extends 'faculty/base.html' %}
+
+{% block hod_damaged_apparatus_view %}
+
+{% comment %} {{role}} {% endcomment %}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Damaged Apparatus Requests</h2>
+
+    <!-- Filter Form -->
+    <form method="GET" action="{% url 'principle_dashboard' %}" class="row g-3 mb-4">
+        <!-- Department Filter -->
+        <div class="col-md-6">
+            <label for="department" class="form-label"><i class="fas fa-building"></i> Department:</label>
+            <select name="department" id="department" class="form-control">
+                <option value="">All</option>
+                {% for department in departments %}
+                    <option value="{{ department }}" {% if request.GET.department == department %}selected{% endif %}>
+                        {{ department }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Payment Status Filter -->
+        <div class="col-md-6">
+            <label for="payment_status" class="form-label"><i class="fas fa-dollar-sign"></i> Payment Status:</label>
+            <select name="payment_status" id="payment_status" class="form-control">
+                <option value="">All</option>
+                <option value="paid" {% if request.GET.payment_status == "paid" %}selected{% endif %}>Paid</option>
+                <option value="not_paid" {% if request.GET.payment_status == "not_paid" %}selected{% endif %}>Not Paid</option>
+            </select>
+        </div>
+
+        <!-- Filter Button -->
+        <div class="col-md-12 text-center mt-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter"></i> Apply Filters
+            </button>
+        </div>
+    </form>
+
+    <!-- Table for Damaged Apparatus Requests -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Student Reg No</th>
+                    <th>Course Code</th>
+                    <th>Experiment No</th>
+                    <th>Department</th>
+                    <th>Lab Batch No</th>
+                    <th>Status</th>
+                    <th>PDF</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in damaged_apparatus_requests %}
+                <tr>
+                    <td>{{ group.student__reg_no }}</td>
+                    <td>{{ group.lab_batch__course_code }}</td>
+                    <td>{{ group.apparatus__ex_no }}</td>
+                    <td>{{ group.apparatus__department }}</td>
+                    <td>{{ group.lab_batch__lab_batch_no }}</td>
+                    <td>
+                        {% if group.verified %}
+                            <span class="badge bg-success"><i class="fas fa-check"></i> Paid</span>
+                        {% else %}
+                            <span class="badge bg-danger"><i class="fas fa-times"></i> Not Paid</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'generate_payment_pdf' group.request_id %}" target="_blank" class="btn btn-danger btn-sm">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock hod_damaged_apparatus_view %}

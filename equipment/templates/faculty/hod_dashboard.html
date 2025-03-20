@@ -1,6 +1,7 @@
 {% extends 'faculty/base.html' %}
 
 {% block hod_dashboard %}
+
 <div class="container mt-4">
     <h2 class="mb-4">Damaged Apparatus Requests</h2>
 
@@ -114,13 +115,18 @@
                         <p>{{ group.apparatus__experiment_name }}</p>
                     </div>
                     <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong><i class="fas fa-calendar-alt"></i> Experiment Date : </strong></p>
+                        <p>{{ group.lab_batch__experiment_date }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
                         <p class="mb-1"><strong><i class="fas fa-building"></i> Department:</strong></p>
-                        <p>{{ group.apparatus__department }}</p>
+                        <p>{{ group.lab_batch__department }}</p>
                     </div>
                     <div class="col-md-6 mb-3">
                         <p class="mb-1"><strong><i class="fas fa-users"></i> Lab Batch No:</strong></p>
                         <p>{{ group.lab_batch__lab_batch_no }}</p>
                     </div>
+                    
                 </div>
                 <table class="table table-bordered">
                     <thead>
@@ -178,7 +184,7 @@
                         <p><strong><i class="fas fa-flask"></i> Experiment Name:</strong> {{ group.apparatus__experiment_name }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong><i class="fas fa-building"></i> Department:</strong> {{ group.apparatus__department }}</p>
+                        <p><strong><i class="fas fa-building"></i> Department:</strong> {{ group.lab_batch__department }}</p>
                         <p><strong><i class="fas fa-users"></i> Lab Batch No:</strong> {{ group.lab_batch__lab_batch_no }}</p>
                     </div>
                 </div>

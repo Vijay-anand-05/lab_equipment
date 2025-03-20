@@ -8,4 +8,7 @@ urlpatterns = [
     path('', include('equipment.urls')),  # Include equipment app URLs
 ] 
 
+if settings.DEBUG:  # Only in development mode
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 

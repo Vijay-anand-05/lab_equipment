@@ -21,6 +21,7 @@ def manual(request):
     return render(request, "student/manual.html")
 
 
+
 from django.shortcuts import render
 
 def custom_404_view(request, exception):
@@ -296,6 +297,7 @@ def apparatus_request(request):
     apparatus_list = Apparatus.objects.none()  # Default: No apparatus
     experiment_name = None
     experiment_no = None
+    experiment_date = None
 
     if ex_no or course_code or practical_course:
         apparatus_list = Apparatus.objects.filter(course_code__in=dept_course_codes)
@@ -312,6 +314,7 @@ def apparatus_request(request):
             first_apparatus = apparatus_list.first()
             experiment_name = first_apparatus.experiment_name
             experiment_no = first_apparatus.ex_no
+            experiment_date = first_apparatus.experiment_date
 
     # Handle POST request (Submit Apparatus Request)
     if request.method == "POST" and apparatus_list.exists():
@@ -349,6 +352,7 @@ def apparatus_request(request):
         "course_code_list": course_code_list,
         "practical_course_list": practical_course_list,
         "student_department": student_department,
+        "experiment_date" : experiment_date
     }
 
     return render(request, "student/apparatus_request.html", context)
@@ -390,9 +394,9 @@ def requested_apparatus_view(request):
 
     # 🔹 2. Find the lab batches the student is assigned to (with technician info)
     assigned_batches = LabBatchAssignment.objects.filter(student=student).values(
-        "lab_batch_no", "course_code", "technician_id"
+        "lab_batch_no", "course_code", "technician_id", "experiment_date"
     )
-
+    print(assigned_batches)
     if not assigned_batches:
         return render(request, "student/requested_apparatus.html", {"error": "No lab batch assigned."})
 
@@ -440,7 +444,28 @@ def requested_apparatus_view(request):
             dept = group["apparatus__department"]
             lab_batch = group["lab_batch__lab_batch_no"]
             req_min = group["request_minute"]
+            
+            
+            request_id = ApparatusRequest.objects.filter(
+        student__reg_no=group["student__reg_no"],
+        lab_batch__course_code=group["lab_batch__course_code"],
+        apparatus__ex_no=group["apparatus__ex_no"]
+    ).values_list("id", flat=True).first()
+            
+            experiment_date = next(
+            (batch["experiment_date"] for batch in assigned_batches if batch["course_code"] == course), None
+        )
 
+            paid = ApparatusRequest.objects.filter(
+    student__reg_no=group["student__reg_no"],
+    lab_batch__course_code=group["lab_batch__course_code"],
+    apparatus__ex_no=group["apparatus__ex_no"],
+    verified=True  # ✅ Check if all requests for this student & experiment are verified
+).exists()
+
+            payment_status = "Paid" if paid else "Not Paid"
+
+            verified = (payment_status == "Paid")
             # 🔹 Fetch apparatus details from `ApparatusRequest`
             details_qs = ApparatusRequest.objects.filter(
                 student__reg_no=student_reg,
@@ -480,7 +505,9 @@ def requested_apparatus_view(request):
                     ]
                 else:
                     group["details"] = [{"error": "No apparatus or experiment data found"}]
-
+            group["experiment_date"] = experiment_date
+            group["payment_status"] = payment_status
+            group["request_id"] = request_id
             grouped_list.append(group)
 
     context = {
@@ -575,7 +602,9 @@ def payment_upload(request):
             grouped_fines[key] = {
                 "course_code": lab_batch.course_code,
                 "lab_batch_no": lab_batch.lab_batch_no,
+                "ex_no" : lab_batch.ex_no,
                 "experiment_name": apparatus.experiment_name,
+                "experiment_date": apparatus_request.request_date,
                 "damaged_apparatus": [],
                 "total_fine": 0
             }
@@ -693,7 +722,7 @@ def faculty_login(request):
                     print(f"Authentication successful for {user.role}!")
 
                     if user.role == "HOD":
-                        return redirect("hod_dashboard")
+                        return redirect("hod_overview")
                     elif user.role == "Principal":
                         return redirect("principle_dashboard")
                     elif user.role == "Vice_Principal":
@@ -1013,6 +1042,9 @@ def technician_dashboard(request):
         dept = group["apparatus__department"]
         lab_batch = group["lab_batch__lab_batch_no"]
         req_min = group["request_minute"]
+        
+        experiment_date = LabBatchAssignment.objects.filter(
+        lab_batch_no=lab_batch, course_code=course, technician_id=user_id).values_list("experiment_date", flat=True).first()
 
         details_qs = ApparatusRequest.objects.filter(
             student__reg_no=student_reg,
@@ -1031,6 +1063,7 @@ def technician_dashboard(request):
                 "apparatus__quantity_available",
             )
         )
+        group["experiment_date"] = experiment_date
 
     def sorted_list(qs_values):
         return sorted(list(set(qs_values)))
@@ -1056,7 +1089,8 @@ def technician_dashboard(request):
         "experiment_no_list": sorted_list(
             ApparatusRequest.objects.filter(technician_id=user_id).values_list("apparatus__ex_no", flat=True)
         ),
-        "page_name": page_name
+        "page_name": page_name,
+        "user_data" : user_data
     }
     
     return render(request, "technician/technician_dashboard.html", context)
@@ -1212,6 +1246,21 @@ from django.contrib.auth.decorators import login_required
 
 @technician_required
 def add_subject_type(request):
+    user_id = request.session.get("user_id", None)
+    print(user_id)
+    if not user_id:
+        return redirect("/technician_login")
+
+    # Get logged-in technician details
+    try:
+        user_data = User.objects.using("rit_e_approval").get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found. Please log in again.")
+        return redirect("/technician_login")
+
+    if user_data.role != "Lab_Incharge":
+        messages.error(request, "You are not authorized to access this page.")
+        return redirect("/technician_login")
     if request.method == "POST":
         type_name = request.POST.get("type_name")
         if type_name:
@@ -1223,7 +1272,7 @@ def add_subject_type(request):
                 return redirect("add_subject_type")
     subject_types = SubjectType.objects.all()
     return render(
-        request, "technician/add_subject_type.html", {"subject_types": subject_types}
+        request, "technician/add_subject_type.html", {"subject_types": subject_types, "user_data" : user_data}
     )
 
 
@@ -1235,6 +1284,21 @@ from django.contrib.auth.decorators import login_required
 
   
 def add_category(request):
+    user_id = request.session.get("user_id", None)
+    print(user_id)
+    if not user_id:
+        return redirect("/technician_login")
+
+    # Get logged-in technician details
+    try:
+        user_data = User.objects.using("rit_e_approval").get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found. Please log in again.")
+        return redirect("/technician_login")
+
+    if user_data.role != "Lab_Incharge":
+        messages.error(request, "You are not authorized to access this page.")
+        return redirect("/technician_login")
     if request.method == "POST":
         category_name = request.POST.get("category_name")
 
@@ -1249,7 +1313,7 @@ def add_category(request):
         else:
             messages.error(request, "Category name cannot be empty.")
 
-    return render(request, "technician/add_category.html")
+    return render(request, "technician/add_category.html", {"user_data" : user_data})
 
 
 from django.shortcuts import render, redirect
@@ -1314,7 +1378,7 @@ def add_course(request):
     return render(
         request,
         "technician/add_course.html",
-        {"form": form, "departments": department_list, "sem": sem},
+        {"form": form, "departments": department_list, "sem": sem, "user_data" : user_data},
     )
 
 
@@ -1386,6 +1450,7 @@ def add_lab_exercise(request):
         "regulations": regulation_list,
         "departments": departments,  # Pass all departments
         "mapped_department": mapped_department,  # Pass mapped technician department
+        "user_data" : user_data
     }
 
     return render(request, "technician/add_lab_exercise.html", context)
@@ -1411,18 +1476,14 @@ from .models import Apparatus, LabExercise, Student_cgpa, User
 
 @technician_required
 def add_apparatus(request):
-    # 🔹 Get the logged-in Technician user ID
     user_id = request.session.get("user_id", None)
-    print(user_id)
     if not user_id:
-        return redirect("/technician_login")  # Redirect if not logged in
+        return redirect("/technician_login")
 
-    # 🔹 Retrieve Technician details
     user_data = User.objects.using("rit_e_approval").get(id=user_id)
-    technician_department = user_data.Department.strip().upper()  # Normalize
+    technician_department = user_data.Department.strip().upper()
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
-    # 🔹 Ensure only Technicians can access
     if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
@@ -1430,41 +1491,29 @@ def add_apparatus(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            print("✅ Received Data:", data)  # Debugging
+            print("✅ Received Data:", data) 
 
-            # Extract and sanitize input data
-            ex_no = str(data.get("ex_no", "")).strip()  # ✅ Keep it as CharField
+            ex_no = str(data.get("ex_no", "")).strip()
             course_code = str(data.get("course_code", "")).strip()
             practical_course = str(data.get("practical_course", "")).strip()
             regulation = str(data.get("regulation", "")).strip()
             batch = str(data.get("batch", "")).strip()
-            department = str(data.get("department", "")).strip()  # New field for department
+            department = str(data.get("department", "")).strip()
             semester = data.get("semester")
             experiment_name = str(data.get("experiment_name", "")).strip()
             apparatus_entries = data.get("apparatus_entries", [])
 
-            # ✅ Validate required fields
             if not all([ex_no, course_code, practical_course, regulation, batch, department, semester, experiment_name]):
                 return JsonResponse({"error": "Missing required fields"}, status=400)
 
-            # ✅ Ensure the selected department matches the technician’s mapped department
-            # if department != mapped_department:
-            #     return JsonResponse({"error": "Unauthorized department selection"}, status=403)
-
-            # ✅ Validate experiment existence
             try:
-                lab_exercise = LabExercise.objects.get(
-                    Ex_no=ex_no, Ex_title=experiment_name
-                )
+                lab_exercise = LabExercise.objects.get(Ex_no=ex_no, Ex_title=experiment_name)
+                experiment_date = lab_exercise.experiment_date  # ✅ Fetch experiment_date
             except LabExercise.DoesNotExist:
-                return JsonResponse(
-                    {"error": "Invalid experiment number or experiment name"},
-                    status=400,
-                )
+                return JsonResponse({"error": "Invalid experiment number or experiment name"}, status=400)
 
-            print("✅ Found LabExercise:", lab_exercise)
+            print("✅ Found LabExercise:", lab_exercise, "with Experiment Date:", experiment_date)
 
-            # ✅ Save apparatus data
             saved_apparatus = []
             for entry in apparatus_entries:
                 apparatus_name = str(entry.get("apparatus_name", "")).strip()
@@ -1473,7 +1522,7 @@ def add_apparatus(request):
 
                 if apparatus_name and quantity_available:
                     apparatus = Apparatus.objects.create(
-                        ex_no=ex_no,  # ✅ Store as CharField
+                        ex_no=ex_no,
                         course_code=course_code,
                         practical_course=practical_course,
                         experiment_name=experiment_name,
@@ -1483,15 +1532,14 @@ def add_apparatus(request):
                         apparatus_name=apparatus_name,
                         range_specification=range_specification,
                         quantity_available=quantity_available,
-                        department=department,  # Save department field
-                        technician_id = user_id
+                        department=department,
+                        technician_id=user_id,
+                        experiment_date=experiment_date  # ✅ Save experiment_date
                     )
                     saved_apparatus.append(apparatus.apparatus_name)
 
             print(f"✅ Apparatus saved successfully: {saved_apparatus}")
-            return JsonResponse(
-                {"message": "Apparatus saved successfully!"}, status=201
-            )
+            return JsonResponse({"message": "Apparatus saved successfully!"}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data"}, status=400)
@@ -1499,48 +1547,21 @@ def add_apparatus(request):
             print(f"❌ Error: {e}")
             return JsonResponse({"error": str(e)}, status=400)
 
-    # ✅ Load dropdown data efficiently, filtered by department
     sem_list = list(range(1, 9))
-    
     departments = Student_cgpa.objects.using('rit_cgpatrack').values_list('department', flat=True).distinct()
 
     dropdown_data = {
-        
-        "batches": list(
-            LabExercise.objects.filter(technician_id=user_id)
-            .values_list("batch", flat=True)
-            .distinct()
-        ),
-        "regulations": list(
-            LabExercise.objects.filter(technician_id=user_id)
-            .values_list("regulations", flat=True)
-            .distinct()
-        ),
-        "course_code": list(
-            LabExercise.objects.filter(technician_id=user_id)
-            .values_list("course_code", flat=True)
-            .distinct()
-        ),
-        "practical_course": list(
-            LabExercise.objects.filter(technician_id=user_id)
-            .values_list("practical_course", flat=True)
-            .distinct()
-        ),
-        "ex_no": list(
-            LabExercise.objects.filter(technician_id=user_id)
-            .values_list("Ex_no", flat=True)
-            .distinct()
-        ),  # ✅ CharField values
-        "experiment_name": list(
-            LabExercise.objects.filter(technician_id=user_id)
-            .values_list("Ex_title", flat=True)
-            .distinct()
-        ),
+        "batches": list(LabExercise.objects.filter(technician_id=user_id).values_list("batch", flat=True).distinct()),
+        "regulations": list(LabExercise.objects.filter(technician_id=user_id).values_list("regulations", flat=True).distinct()),
+        "course_code": list(LabExercise.objects.filter(technician_id=user_id).values_list("course_code", flat=True).distinct()),
+        "practical_course": list(LabExercise.objects.filter(technician_id=user_id).values_list("practical_course", flat=True).distinct()),
+        "ex_no": list(LabExercise.objects.filter(technician_id=user_id).values_list("Ex_no", flat=True).distinct()),
+        "experiment_name": list(LabExercise.objects.filter(technician_id=user_id).values_list("Ex_title", flat=True).distinct()),
         "sem": sem_list,
-        "department_list": departments,  # Only show Technician's department
+        "department_list": departments,
+        "user_data": user_data
     }
     return render(request, "technician/add_apparatus.html", dropdown_data)
-
 
 
 
@@ -1560,19 +1581,57 @@ from .models import Student_cgpa, Course, LabExercise, LabBatchAssignment, User
 # }
 
 
+
+import itertools
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import LabExercise, LabBatchAssignment
+
+def get_next_experiment(course_code, lab_batch_no, user_id):
+    """Cycle through experiments for the given course & batch."""
+    exp_numbers = list(
+        LabExercise.objects.filter(course_code=course_code, technician_id=user_id)
+        .values_list("Ex_no", flat=True)
+        .distinct()
+    )
+
+    last_assignment = LabBatchAssignment.objects.filter(
+        course_code=course_code, lab_batch_no=lab_batch_no
+    ).order_by("-created_at").first()
+
+    if last_assignment and last_assignment.ex_no in exp_numbers:
+        try:
+            last_index = exp_numbers.index(last_assignment.ex_no)
+            new_order = exp_numbers[last_index + 1:] + exp_numbers[:last_index + 1]
+            exp_cycle = itertools.cycle(new_order)
+        except ValueError:
+            exp_cycle = itertools.cycle(exp_numbers)
+    else:
+        exp_cycle = itertools.cycle(exp_numbers)
+
+    return next(exp_cycle) if exp_numbers else None  # Return next experiment or None
+
+
+
+
+
+
+
+
+
+
+
+
 @technician_required
 def add_batch(request):
-    # 🔹 Get the logged-in Technician user ID
     user_id = request.session.get("user_id", None)
     if not user_id:
-        return redirect("/technician_login")  # Redirect if not logged in
+        return redirect("/technician_login")
 
-    # 🔹 Retrieve Technician details
     user_data = User.objects.using("rit_e_approval").get(id=user_id)
-    technician_department = user_data.Department.strip().upper()  # Normalize
+    technician_department = user_data.Department.strip().upper()
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
-    # 🔹 Ensure only Technicians can access
     if user_data.role != "Lab_Incharge":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
@@ -1584,19 +1643,10 @@ def add_batch(request):
         assessment = request.POST.get("assessment", "").strip()
         selected_students = request.POST.getlist("selected_students")
 
-        # ✅ Ensure the course belongs to the Technician's department
         if not LabExercise.objects.filter(course_code=course_code).exists():
             messages.error(request, "Unauthorized course selection.")
             return redirect("add_batch")
 
-        # Retrieve available experiment numbers for the selected course
-        exp_numbers = list(
-            LabExercise.objects.filter(course_code=course_code, technician_id=user_id)
-                .values_list("Ex_no", flat=True)
-                .distinct()
-        )
-
-        # Get experiment number for this course batch if already assigned
         existing_batch = LabBatchAssignment.objects.filter(
             lab_batch_no=lab_batch_no, course_code=course_code
         ).first()
@@ -1607,18 +1657,16 @@ def add_batch(request):
             if experiment_no_input:
                 exp_no = experiment_no_input
             else:
-                last_assignment = LabBatchAssignment.objects.filter(course_code=course_code).order_by("-created_at").first()
-                if last_assignment:
-                    try:
-                        last_index = exp_numbers.index(last_assignment.ex_no)
-                        new_order = exp_numbers[last_index + 1:] + exp_numbers[:last_index + 1]
-                        exp_cycle = itertools.cycle(new_order)
-                    except ValueError:
-                        exp_cycle = itertools.cycle(exp_numbers)
-                else:
-                    exp_cycle = itertools.cycle(exp_numbers)
+                exp_no = get_next_experiment(course_code, lab_batch_no, user_id)  # ✅ Use cycling function
 
-                exp_no = next(exp_cycle)
+        # ✅ Fetch experiment date from LabExercise
+        try:
+            lab_exercise = LabExercise.objects.filter(course_code=course_code, Ex_no=exp_no).first()
+            experiment_date = lab_exercise.experiment_date if lab_exercise else None  # ✅ Safe fetch
+
+        except LabExercise.DoesNotExist:
+            messages.error(request, "Invalid experiment number or experiment name.")
+            return redirect("add_batch")
 
         if not lab_batch_no:
             messages.error(request, "Please enter a lab batch number.")
@@ -1632,12 +1680,6 @@ def add_batch(request):
                 try:
                     student = Student_cgpa.objects.using("rit_cgpatrack").get(reg_no=reg_no)
 
-                    # ✅ Ensure the student belongs to the Technician's department
-                    # if student.department != mapped_department:
-                    #     messages.warning(request, f"Student {reg_no} does not belong to your department. Skipping.")
-                    #     continue  # Skip this student
-
-                    # Check if student is already assigned to this batch for the same course, department, and section
                     existing_assignment = LabBatchAssignment.objects.filter(
                         student=student,
                         lab_batch_no=lab_batch_no,
@@ -1651,7 +1693,7 @@ def add_batch(request):
                         messages.warning(request, f"Student {reg_no} is already assigned to this batch. Skipping.")
                         continue
 
-                    # Assign student to lab batch
+                    # ✅ Save batch assignment with experiment date
                     LabBatchAssignment.objects.create(
                         student=student,
                         lab_batch_no=lab_batch_no,
@@ -1660,7 +1702,8 @@ def add_batch(request):
                         assessment=assessment,
                         department=student.department,
                         section=student.section,
-                        technician_id=user_id
+                        technician_id=user_id,
+                        experiment_date=experiment_date  # ✅ Save experiment date
                     )
                     success_count += 1
                 except Student_cgpa.DoesNotExist:
@@ -1686,20 +1729,18 @@ def add_batch(request):
 
     students = Student_cgpa.objects.using("rit_cgpatrack").none()
     if filtered:
-        students = Student_cgpa.objects.using("rit_cgpatrack").filter(department = department_filter)  # Fetch students from all departments
-        
+        students = Student_cgpa.objects.using("rit_cgpatrack").filter(department=department_filter)
+
         if batch_filter:
             students = students.filter(batch=batch_filter)
         if section_filter:
             students = students.filter(section=section_filter)
         students = students.order_by("-gender")
 
-        # Exclude students already assigned to the same batch and course
         assigned_regnos = list(
             LabBatchAssignment.objects.filter(
                 course_code=course_code,
                 lab_batch_no=batch_filter,
-                # department=mapped_department,
                 section=section_filter,
             ).values_list("student__reg_no", flat=True)
         )
@@ -1712,7 +1753,6 @@ def add_batch(request):
         .values_list("section", flat=True)
         .distinct()
     )
-    # Filter only department-specific courses
     course_codes = list(
         LabExercise.objects.filter(technician_id=user_id)
         .values_list("course_code", flat=True)
@@ -1724,11 +1764,8 @@ def add_batch(request):
         .distinct()
     )
 
-    # Retrieve existing assignments
     lab_assignments = LabBatchAssignment.objects.filter(technician_id=user_id).order_by("-created_at")
     departments = LabExercise.objects.filter(technician_id=user_id).values_list('department', flat=True)
-    print("departments",departments)
-
 
     context = {
         "students": students,
@@ -1737,14 +1774,14 @@ def add_batch(request):
         "department_filter": department_filter,
         "section_filter": section_filter,
         "batches": batches,
-        "departments": departments,  # Only the technician's department
+        "departments": departments,
         "section_options": section_options,
         "course_code": course_codes,
         "ex_no": ex_nos,
         "lab_assignments": lab_assignments,
+        "user_data": user_data
     }
     return render(request, "technician/add_batch.html", context)
-
 
 
 from django.shortcuts import render, redirect
@@ -1844,7 +1881,8 @@ def view_batches(request):
         "assessments": assessments,
         "lab_batch_nos": lab_batches,
         "filters_applied": filters_applied,
-        "departments" : departments
+        "departments" : departments,
+        "user_data" : user_data
     }
     return render(request, "technician/view_batches.html", context)
 
@@ -2275,6 +2313,11 @@ def damaged_apparatus(request):
         first_request = details_qs.first()
         group["request_id"] = first_request.id if first_request else None
         group["verified"] = all(req.verified for req in details_qs)
+        
+        experiment_date = LabBatchAssignment.objects.filter(
+        lab_batch_no=group["lab_batch__lab_batch_no"],
+        course_code=group["lab_batch__course_code"], technician_id=user_id
+    ).values_list("experiment_date", flat=True).first()
 
         # Get fine amount and remarks from ApparatusRequestDamage
         damage_details = {
@@ -2294,6 +2337,7 @@ def damaged_apparatus(request):
             }
             for detail in details_qs if detail.apparatus
         ]
+        group["experiment_date"] = experiment_date
         grouped_list.append(group)
 
     departments = LabBatchAssignment.objects.filter(technician_id=user_id).values_list("department", flat=True).distinct().order_by("department")
@@ -2304,6 +2348,7 @@ def damaged_apparatus(request):
         "departments": departments,
         "course_codes": course_codes,
         "page_name": page_name,
+        "user_data" : user_data
     }
     return render(request, "technician/damaged_apparatus.html", context)
 
@@ -2398,7 +2443,7 @@ def payment_status(request):
     grouped = (
         qs.values(
             "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
-            "lab_batch__lab_batch_no", "status", "verified"
+            "lab_batch__lab_batch_no", "status", "verified", "lab_batch__experiment_date"
         )
         .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))
         .order_by("student__reg_no", "lab_batch__lab_batch_no")
@@ -2417,6 +2462,7 @@ def payment_status(request):
         first_request = details_qs.first()
         group["request_id"] = first_request.id if first_request else None
         group["remarks"] = first_request.technician_remarks if first_request else ""
+        group["experiment_date"] = first_request.lab_batch.experiment_date if first_request else None  # 🔹 Added
         
         damage_details = {
             entry.apparatus_request_id: {"fine_amount": entry.fine_amount or 0, "remarks": entry.remarks or ""}
@@ -2446,6 +2492,7 @@ def payment_status(request):
         "course_codes": course_codes,
         "damaged_apparatus_requests": grouped_list,
         "page_name": page_name,
+        "user_data" : user_data
     }
     return render(request, "technician/payment_status.html", context)
 
@@ -2494,10 +2541,37 @@ def generate_payment_pdf(request, request_id):
     width, height = A4
 
     # Load Logo
-    logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "image_1.png")
-    if os.path.exists(logo_path):
-        logo = ImageReader(logo_path)
-        p.drawImage(logo, 50, height - 100, width=100, height=100, mask="auto")
+    logo_path = os.path.join(settings.STATICFILES_DIRS[0], "images", "logo.jpg")
+    logo_path_1 = os.path.join(settings.STATICFILES_DIRS[0], "images", "bg_logo.png")
+    if os.path.exists(logo_path) and os.path.exists(logo_path_1):
+        logo = ImageReader(logo_path_1)
+
+        # 🔹 Draw the first image (Top-Left) without transparency
+        p.drawImage(logo, 50, height - 100, width=450, height=80, mask="auto")
+
+        # 🔹 Load the logo again for the second (centered) image with transparency
+        img = Image.open(logo_path).convert("RGBA")  # Ensure RGBA format
+        alpha = img.split()[3]  # Extract alpha channel
+        alpha = alpha.point(lambda p: p * 0.4)  # Reduce opacity to 30%
+        img.putalpha(alpha)
+
+        # 🔹 Convert image to in-memory bytes
+        img_bytes = BytesIO()
+        img.save(img_bytes, format="PNG")
+        img_bytes.seek(0)  # Reset pointer
+
+        # 🔹 Use the in-memory image for the second draw
+        transparent_logo = ImageReader(img_bytes)
+        logo_width, logo_height = 150, 150  # Set fixed dimensions
+
+        # **Calculate center position**
+        logo_x = (width - logo_width) / 2
+        logo_y = (height - logo_height) / 2
+
+        # 🔹 Draw the semi-transparent second image (Centered)
+        p.drawImage(transparent_logo, logo_x, logo_y, width=logo_width, height=logo_height, mask="auto")
+
+        
 
     # Title
     p.setFont("Helvetica-Bold", 16)
@@ -2519,15 +2593,16 @@ def generate_payment_pdf(request, request_id):
         return y_offset - row_height
 
     # Display essential details
-    y_position = draw_row("Experiment Name:", apparatus_request.apparatus.experiment_name, y_position)
-    y_position = draw_row("Practical Course:", apparatus_request.apparatus.practical_course, y_position)
-    y_position = draw_row("Payment Verified:", "Paid" if apparatus_request.verified else "Not Paid", y_position)
-    y_position = draw_row("Date:", apparatus_request.verified_date, y_position)
-    y_position = draw_row("Course Code:", apparatus_request.course_code, y_position)
-    y_position = draw_row("Experiment No:", apparatus_request.lab_batch.ex_no, y_position)
-    y_position = draw_row("Department:", apparatus_request.apparatus.department, y_position)
-    y_position = draw_row("Lab Batch No:", apparatus_request.lab_batch.lab_batch_no, y_position)
-    y_position = draw_row("Status:", apparatus_request.status, y_position)
+    y_position = draw_row("Experiment Name :", apparatus_request.apparatus.experiment_name, y_position)
+    y_position = draw_row("Experiment Date   :", apparatus_request.apparatus.experiment_date, y_position)
+    y_position = draw_row("Practical Course   :", apparatus_request.apparatus.practical_course, y_position)
+    y_position = draw_row("Payment Verified  :", "Paid" if apparatus_request.verified else "Not Paid", y_position)
+    y_position = draw_row("Date                      :", apparatus_request.verified_date if apparatus_request.verified_date else "NIL", y_position)
+    y_position = draw_row("Course Code         :", apparatus_request.course_code, y_position)
+    y_position = draw_row("Experiment No      :", apparatus_request.lab_batch.ex_no, y_position)
+    y_position = draw_row("Department           :", apparatus_request.apparatus.department, y_position)
+    y_position = draw_row("Lab Batch No        :", apparatus_request.lab_batch.lab_batch_no, y_position)
+    y_position = draw_row("Status                    :", apparatus_request.status, y_position)
 
     # Fetch Fine Details
     student = get_object_or_404(Student_cgpa.objects.using("rit_cgpatrack"), reg_no=apparatus_request.student_id)
@@ -2934,9 +3009,76 @@ def review_payment_receipt(request):
         "course_codes": course_codes,
         "reg_no_filter": reg_no_filter,
         "course_code_filter": course_code_filter,
+        "user_data" : user_data
     }
 
     return render(request, "technician/review_payment_receipt.html", context)
+
+
+from django.shortcuts import render, redirect
+from django.db.models import Count, Sum
+from .models import ApparatusRequest, ApparatusRequestDamage, User
+
+from django.shortcuts import render, redirect
+from django.db.models import Count, Sum
+from .models import ApparatusRequest, ApparatusRequestDamage, User, LabBatchAssignment
+
+def hod_overview(request):
+    user_id = request.session.get("user_id", None)
+    if not user_id:
+        return redirect("/faculty_login")
+
+    # Retrieve user details
+    user_data = User.objects.using("rit_e_approval").get(id=user_id)
+
+    # Get HOD's department
+    hod_department = user_data.Department.strip().upper()
+
+    # Get all technicians under the HOD's department
+    technicians_in_dept = list(User.objects.using('rit_e_approval').filter(
+        role="Lab_Incharge",
+        Department__iexact=hod_department
+    ).values_list("id", flat=True))
+
+    # Base queryset without filters
+    report_qs = ApparatusRequest.objects.filter(technician_id__in=technicians_in_dept)
+
+    # Aggregate counts
+    total_money = ApparatusRequestDamage.objects.filter(
+        apparatus_request__technician_id__in=technicians_in_dept
+    ).aggregate(total_fine=Sum("fine_amount"))["total_fine"] or 0
+
+    total_reports = report_qs.values("student__reg_no", "lab_batch__lab_batch_no").distinct().count()
+    pending_reports = report_qs.filter(status="Pending").values("student__reg_no", "lab_batch__lab_batch_no").distinct().count()
+    total_damaged_reports = report_qs.filter(status="Damaged").values("student__reg_no", "lab_batch__lab_batch_no").distinct().count()
+    hod_approved_reports = report_qs.filter(hod_approval=True).values("student__reg_no", "lab_batch__lab_batch_no").distinct().count()
+    hod_not_approved_reports = report_qs.filter(hod_approval=False).values("student__reg_no", "lab_batch__lab_batch_no").distinct().count()
+    payment_verified_reports = report_qs.filter(verified=True).values("student__reg_no", "lab_batch__lab_batch_no").distinct().count()
+
+    # Get unique departments & sections for dropdown (optional if filters are removed)
+    departments = ApparatusRequest.objects.filter(technician_id__in=technicians_in_dept).values_list("apparatus__department", flat=True).distinct()
+    sections = list(set(
+        section.strip().upper() for section in
+        LabBatchAssignment.objects.filter(technician_id__in=technicians_in_dept)
+        .values_list("section", flat=True)
+        .distinct()
+        if section  # Ensure no None values
+    ))
+
+    context = {
+        "user_data": user_data,
+        "total_money": total_money,
+        "total_reports": total_reports,
+        "pending_reports": pending_reports,
+        "total_damaged_reports": total_damaged_reports,
+        "hod_approved_reports": hod_approved_reports,
+        "hod_not_approved_reports": hod_not_approved_reports,
+        "payment_verified_reports": payment_verified_reports,
+        "departments": departments,  # Optional if filters are removed
+        "sections": sections,  # Optional if filters are removed
+        "role": user_data.role,
+    }
+    return render(request, "faculty/hod_overview.html", context)
 
 from django.contrib.auth import logout
 
@@ -3068,6 +3210,7 @@ def hod_dashboard(request):
             "request_minute",
             "apparatus__experiment_name",
             "apparatus__practical_course",
+            "lab_batch__experiment_date"
         )
         .annotate(apparatus_count=Count("id"))
         .order_by("student__reg_no", "lab_batch__lab_batch_no", "request_minute")
@@ -3156,9 +3299,11 @@ def hod_dashboard(request):
         "course_codes": course_codes,
         "experiment_names": experiment_names,
         "role": user_data.role,
+        "user_data" : user_data
     }
 
     return render(request, "faculty/hod_dashboard.html", context)
+
 
 
 from django.http import JsonResponse
@@ -3199,6 +3344,107 @@ def approve_request(request):
     return JsonResponse({"success": False, "error": "Invalid request method."})
 
 
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+# from control_room.models import User
+# from application.models import ApparatusRequest, ApparatusRequestDamage, LabBatchAssignment
+
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+# from control_room.models import User
+# from application.models import ApparatusRequest, ApparatusRequestDamage, LabBatchAssignment
+
+def hod_damaged_apparatus_view(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("/faculty_login")
+
+    user_data = User.objects.using("rit_e_approval").get(id=user_id)
+    user_role = user_data.role.lower()
+    
+    # HOD's department
+    hod_department = user_data.Department.strip().upper() if user_role == "hod" else None
+
+    # Get all technicians assigned to the HOD’s department
+    technicians_in_dept = list(User.objects.using('rit_e_approval').filter(
+        role="Lab_Incharge",
+        Department__iexact=hod_department
+    ).values_list("id", flat=True))
+
+    print("Technicians in HOD's Dept:", technicians_in_dept)
+
+    # Get filter values from request
+    department_filter = request.GET.get("department", "").strip()
+    payment_status = request.GET.get("payment_status", "").strip()
+
+    # Fetch all apparatus requests handled by these technicians (even if from other departments)
+    qs = ApparatusRequest.objects.filter(
+        status="Damaged",
+        technician_id__in=technicians_in_dept  # Filter by HOD’s department technicians
+    )
+
+    # Apply additional filters
+    if department_filter:
+        qs = qs.filter(apparatus__department=department_filter)
+    if payment_status:
+        qs = qs.filter(verified=(payment_status.lower() == "paid"))
+
+    grouped_list = []
+    grouped = (
+        qs.values(
+            "student__reg_no", "lab_batch__course_code", "apparatus__ex_no", "apparatus__department",
+            "lab_batch__lab_batch_no", "status", "verified"
+        )
+        .annotate(total_fine=Sum("apparatusrequestdamage__fine_amount"))
+        .order_by("student__reg_no", "lab_batch__lab_batch_no")
+    )
+
+    for group in grouped:
+        details_qs = ApparatusRequest.objects.filter(
+            student__reg_no=group["student__reg_no"],
+            lab_batch__course_code=group["lab_batch__course_code"],
+            apparatus__ex_no=group["apparatus__ex_no"],
+            apparatus__department=group["apparatus__department"],
+            lab_batch__lab_batch_no=group["lab_batch__lab_batch_no"],
+        )
+
+        first_request = details_qs.first()
+        group["request_id"] = first_request.id if first_request else None
+        group["remarks"] = first_request.technician_remarks if first_request else ""
+
+        damage_details = {
+            entry.apparatus_request_id: {"fine_amount": entry.fine_amount or 0, "remarks": entry.remarks or ""}
+            for entry in ApparatusRequestDamage.objects.filter(apparatus_request__in=details_qs)
+        }
+
+        group["apparatus_list"] = [
+            {
+                "id": detail.id,
+                "apparatus_name": detail.apparatus.apparatus_name,
+                "fine_amount": damage_details.get(detail.id, {}).get("fine_amount", 0),
+                "remarks": damage_details.get(detail.id, {}).get("remarks", ""),
+            }
+            for detail in details_qs if detail.apparatus
+        ]
+
+        grouped_list.append(group)
+
+    # Get distinct departments handled by the HOD’s technicians (even if from different departments)
+    departments = (
+        LabBatchAssignment.objects.filter(technician_id__in=technicians_in_dept)
+        .values_list("department", flat=True)
+        .distinct()
+        .order_by("department")
+    )
+
+    context = {
+        "departments": departments,  
+        "damaged_apparatus_requests": grouped_list,
+        "page_name": "hod_damaged_apparatus",
+        "role": user_data.role,
+        "user_data" : user_data
+    }
+    return render(request, "faculty/hod_damage_apparatus_view.html", context)
 
 
 def faculty_logout(request):
@@ -3283,7 +3529,8 @@ def principle_dashboard(request):
         "departments": departments,  # Now shows all departments
         "damaged_apparatus_requests": grouped_list,
         "page_name": "principle_dashboard",
-        "role" : user_data.role
+        "role" : user_data.role,
+        "user_data" : user_data
     }
     return render(request, "faculty/principle_dashboard.html", context)
 
@@ -3360,6 +3607,7 @@ def vice_principle_dashboard(request):
         "departments": departments,  # Now shows all departments
         "damaged_apparatus_requests": grouped_list,
         "page_name": "principle_dashboard",
-        "role" : user_data.role
+        "role" : user_data.role,
+        "user_data" : user_data
     }
     return render(request, "faculty/vice_principle_dashboard.html", context)

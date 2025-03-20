@@ -1,0 +1,135 @@
+{% extends 'faculty/base.html' %}
+
+{% block hod_overview %}
+<div class="container">
+    <h3 class="text-center">HOD Overview</h3>
+
+    <!-- Cards -->
+    <div class="row">
+        <!-- Total Money -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fa fa-inr fa-3x text-primary mb-3 icon-animate"></i>
+                    <h5 class="card-title">Total Money</h5>
+                    <p class="card-text fs-4 fw-bold">₹ {{ total_money }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Reports -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-alt fa-3x text-success mb-3 icon-animate"></i>
+                    <h5 class="card-title">Total Reports</h5>
+                    <p class="card-text fs-4 fw-bold">{{ total_reports }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Reports -->
+        {% comment %} <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fas fa-hourglass-half fa-3x text-warning mb-3 icon-animate"></i>
+                    <h5 class="card-title">Pending Reports</h5>
+                    <p class="card-text fs-4 fw-bold">{{ pending_reports }}</p>
+                </div>
+            </div>
+        </div> {% endcomment %}
+
+        <!-- Total Damaged Reports -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fas fa-tools fa-3x text-danger mb-3 icon-animate"></i>
+                    <h5 class="card-title">Total Damaged Reports</h5>
+                    <p class="card-text fs-4 fw-bold">{{ total_damaged_reports }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOD Approved Reports -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-check fa-3x text-primary mb-3 icon-animate"></i>
+                    <h5 class="card-title">HOD Approved Reports</h5>
+                    <p class="card-text fs-4 fw-bold">{{ hod_approved_reports }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOD Not Approved Reports -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-times fa-3x text-danger mb-3 icon-animate"></i>
+                    <h5 class="card-title">HOD Not Approved Reports</h5>
+                    <p class="card-text fs-4 fw-bold">{{ hod_not_approved_reports }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Verified Reports -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 rounded hover-animate">
+                <div class="card-body text-center">
+                    <i class="fas fa-receipt fa-3x text-info mb-3 icon-animate"></i>
+                    <h5 class="card-title">Payment Verified Reports</h5>
+                    <p class="card-text fs-4 fw-bold">{{ payment_verified_reports }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS for Animations -->
+<style>
+    /* Hover animation for cards */
+    .hover-animate {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden; /* Ensure child animations don't overflow */
+    }
+
+    .hover-animate:hover {
+        transform: translateY(-10px); /* Move card up slightly */
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Add stronger shadow */
+    }
+
+    /* Icon animation */
+    .icon-animate {
+        transition: transform 0.3s ease;
+    }
+
+    .hover-animate:hover .icon-animate {
+        transform: scale(1.2) rotate(10deg); /* Enlarge and rotate icon on hover */
+    }
+
+    /* Moving text animation */
+    .card-title {
+        transition: transform 0.3s ease;
+    }
+
+    .hover-animate:hover .card-title {
+        transform: translateX(10px); /* Move text slightly to the right */
+    }
+
+    /* Background moving effect */
+    .hover-animate::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .hover-animate:hover::before {
+        left: 100%; /* Move the gradient across the card */
+    }
+</style>
+{% endblock hod_overview %}

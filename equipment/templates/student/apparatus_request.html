@@ -73,7 +73,8 @@
     {% if apparatus_list.exists %}
         <div class="alert alert-info">
             <strong>Experiment No:</strong> {{ experiment_no }} |
-            <strong>Experiment Name:</strong> {{ experiment_name }}
+            <strong>Experiment Name:</strong> {{ experiment_name }} |
+            <strong>Experiment Date:</strong> {{ experiment_date }}
         </div>
 
         <!-- Apparatus List -->
@@ -99,7 +100,7 @@
             </table>
 
             <button type="submit" class="btn btn-success btn-block" name="request_apparatus">
-                Request All Filtered Apparatus
+                Submit to Request Apparatus / System
             </button>
         </form>
 

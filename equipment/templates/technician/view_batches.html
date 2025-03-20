@@ -3,8 +3,9 @@
 <div class="container mt-4">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
   <!-- Message Display -->
-  {% if messages %}
+  {% comment %} {% if messages %}
     <div class="mt-3">
       {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
@@ -13,7 +14,7 @@
         </div>
       {% endfor %}
     </div>
-  {% endif %}
+  {% endif %} {% endcomment %}
 
   <h2 class="mb-4 text-center">Lab Batch Assignments</h2>
 

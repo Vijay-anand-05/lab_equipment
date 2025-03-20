@@ -36,7 +36,7 @@
                                         <th>Lab Batch No</th>
                                         <th>Experiment No</th>
                                         <th>Assessment</th>
-                                        <th>Assigned On</th>
+                                        <th>Experiment Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -46,7 +46,7 @@
                                         <td>{{ assignment.lab_batch_no }}</td>
                                         <td>{{ assignment.ex_no }}</td>
                                         <td>{{ assignment.assessment }}</td>
-                                        <td>{{ assignment.created_at|date:"Y-m-d H:i" }}</td>
+                                        <td>{{ assignment.experiment_date|date:"Y-m-d" }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

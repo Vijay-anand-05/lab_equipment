@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ramco Institute of Technology</title>
-    <link rel="website icon" type="png" href="{% static 'images/image_1.png' %}">
+    <link rel="website icon" type="png" href="{% static 'images/logo1.png' %}">
     
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -64,47 +64,55 @@
         </div>
         <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-                <a href="{% url 'student_profile' %}" class="nav-link {% if request.path == '/student/student_profile' %}active{% endif %}">
-                    <i class="fas fa-user-circle mr-3"></i> Profile
+                <a href="{% url 'student_profile' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/student_profile' %}active{% endif %}">
+                    <i class="fas fa-user-circle me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Profile</span>
                 </a>
             </li>
-            
-                {% comment %} {{request.path}} {% endcomment %}
-            <li class="nav-item sidebar-link ">
-                <a href="{% url 'student_dashboard' %}" class="nav-link {% if request.path == '/student/student_dashbord/' %}active{% endif %}">
-                    <i class="fas fa-chalkboard mr-3"></i> Apparatus Issue Dashboard
-                </a>
-            </li>
-            
-            
+        
             <li class="nav-item">
-                <a href="{% url 'requested_apparatus' %}" class="nav-link {% if request.path == '/student/requested_apparatus/' %}active{% endif %}">
-                    <i class="fas fa-flask mr-3"></i> Requested Apparatus
+                <a href="{% url 'student_dashboard' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/student_dashbord/' %}active{% endif %}">
+                    <i class="fas fa-chalkboard me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Apparatus Issue Dashboard</span>
                 </a>
             </li>
-            
+        
             <li class="nav-item">
-                <a href="{% url 'apparatus_request' %}" class="nav-link {% if request.path == '/student/apparatus_request' %}active{% endif %}">
-                    <i class="fas fa-file-signature mr-3"></i> Apparatus Request
+                <a href="{% url 'requested_apparatus' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/requested_apparatus/' %}active{% endif %}">
+                    <i class="fas fa-flask me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Requested Apparatus</span>
                 </a>
             </li>
+        
             <li class="nav-item">
-                <a href="{% url 'payment_upload' %}" class="nav-link {% if request.path == '/student/payment_upload/' %}active{% endif %}">
-                    <i class="fas fa-money-check-alt mr-3"></i> Payments & Upload
+                <a href="{% url 'apparatus_request' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/apparatus_request' %}active{% endif %}">
+                    <i class="fas fa-file-signature me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Apparatus Request</span>
                 </a>
             </li>
+        
             <li class="nav-item">
-                <a href="{% url 'manual' %}" class="nav-link {% if request.path == '/student/manual' %}active{% endif %}">
-                    <i class="fas fa-book"></i> Manual
+                <a href="{% url 'payment_upload' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/payment_upload/' %}active{% endif %}">
+                    <i class="fas fa-money-check-alt me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Payments & Upload</span>
                 </a>
             </li>
-
+        
             <li class="nav-item">
-                <a href="{% url 'student_logout' %}" class="nav-link">
-                    <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                <a href="{% url 'manual' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/manual' %}active{% endif %}">
+                    <i class="fas fa-book me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Manual</span>
+                </a>
+            </li>
+        
+            <li class="nav-item">
+                <a href="{% url 'student_logout' %}" class="nav-link d-flex align-items-center">
+                    <i class="fas fa-sign-out-alt me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Logout</span>
                 </a>
             </li>
         </ul>
+        
     </div>
 
     <div class="page-content p-5" id="content">

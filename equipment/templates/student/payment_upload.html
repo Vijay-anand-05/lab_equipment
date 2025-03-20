@@ -83,6 +83,13 @@
         border-radius: 10px;
         box-shadow: 0px 0px 30px rgba(0, 123, 255, 0.5);
     }
+    @media (max-width: 576px) {
+        .btn-sm {
+            font-size: 14px; /* Make the text readable */
+            padding: 6px 12px; /* Adjust button padding */
+        }
+    }
+    
 </style>
 
 
@@ -140,33 +147,41 @@
 <div class="container mt-5">
     <h2 class="text-center mb-4">Damaged Apparatus Fine Details</h2>
 
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Course Code</th>
-                <th>Lab Batch No</th>
-                <th>Experiment Name</th>
-                <th>Total Fine (₹)</th>
-                <th>View</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in fine_records %}
-            <tr>
-                <td>{{ record.course_code }}</td>
-                <td>{{ record.lab_batch_no }}</td>
-                <td>{{ record.experiment_name }}</td>
-                <td>₹{{ record.total_fine }}</td>
-                <td>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#fineModal{{ forloop.counter }}">
-                        View
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Make the table responsive -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Course Code</th>
+                    <th>Lab Batch No</th>
+                    <th>Ex No</th>
+                    <th>Experiment Name</th>
+                    <th>Experiment Date</th>
+                    <th>Total Fine (₹)</th>
+                    <th>View</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in fine_records %}
+                <tr>
+                    <td>{{ record.course_code }}</td>
+                    <td>{{ record.lab_batch_no }}</td>
+                    <td>{{ record.ex_no }}</td>
+                    <td>{{ record.experiment_name }}</td>
+                    <td>{{ record.experiment_date|date:"Y-m-d" }}</td>
+                    <td>₹{{ record.total_fine }}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#fineModal{{ forloop.counter }}">
+                            View
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
 
 <!-- Modals for Viewing Damaged Apparatus (placed outside the table) -->
 {% for record in fine_records %}
