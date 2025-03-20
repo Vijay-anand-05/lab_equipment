@@ -30,7 +30,7 @@
             <div class="row justify-content-center">
                 <div class="col-md-6">
                     <p style="color:red;">NOTE: USE E-APROVAL LOGIN CREDENTIAL</p>
-                    <h2>LOGIN TO LABOURATORY PROJECT</h2>
+                    <h2>LOGIN TO APPARATUS REQUEST SLIP</h2>
                     <form method="POST" autocomplete="off">
                         {% csrf_token %}
                         
@@ -41,7 +41,7 @@
                         {% endif %}
                         
                         <div class="form-group">
-                            <label for="username">Username</label>
+                            <label for="username">Staff ID</label>
                             <input type="text" class="form-control" id="username" name="username" placeholder="Enter your Username" required>
                         </div>
                         

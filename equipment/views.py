@@ -842,7 +842,7 @@ def technician_login(request):
                 return render(request, "technician_login.html")
 
             # Automatically select the best role
-            user = next((u for u in valid_users if u.role == "Lab_Incharge"), valid_users[0])  # Prefer Lab_Incharge
+            user = next((u for u in valid_users if u.role == "Staff"), valid_users[0])  # Prefer Staff
 
             # Store session data
             request.session["user_id"] = user.id
@@ -854,7 +854,7 @@ def technician_login(request):
             if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                 return redirect(next_url)
 
-            return redirect("technician_dashboard") if user.role == "Lab_Incharge" else redirect("staff_dashboard")
+            return redirect("technician_dashboard") if user.role == "Staff" else redirect("staff_dashboard")
 
         except Exception as e:
             messages.error(request, f"An error occurred: {str(e)}")
@@ -872,7 +872,7 @@ def technician_required(view_func):
         user_id = request.session.get("user_id")
         user_role = request.session.get("user_role")
 
-        if not user_id or user_role not in ["Lab_Incharge", "Technician"]:
+        if not user_id or user_role not in ["Staff", "Technician"]:
             return redirect("technician_login")  # Redirect to login if not authenticated
 
         return view_func(request, *args, **kwargs)
@@ -989,7 +989,7 @@ def technician_dashboard(request):
     
     
     # Check if user is a technician and get department
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         return redirect("/technician_login")
 
     # Map department name using the dictionary
@@ -1131,7 +1131,7 @@ def accept_or_reject_apparatus_request(request):
         user_data = User.objects.using("rit_e_approval").get(id=user_id)
         
         # Check if user is a technician
-        if user_data.role != "Lab_Incharge":
+        if user_data.role != "Staff":
             return redirect("/technician_login")
 
         technician_department = user_data.Department  # Assuming the technician has a department field
@@ -1258,7 +1258,7 @@ def add_subject_type(request):
         messages.error(request, "User not found. Please log in again.")
         return redirect("/technician_login")
 
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
     if request.method == "POST":
@@ -1296,7 +1296,7 @@ def add_category(request):
         messages.error(request, "User not found. Please log in again.")
         return redirect("/technician_login")
 
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
     if request.method == "POST":
@@ -1336,7 +1336,7 @@ def add_course(request):
         messages.error(request, "User not found. Please log in again.")
         return redirect("/technician_login")
 
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
 
@@ -1404,7 +1404,7 @@ def add_lab_exercise(request):
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
     # Check if the user is a Technician
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
 
@@ -1484,7 +1484,7 @@ def add_apparatus(request):
     technician_department = user_data.Department.strip().upper()
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
 
@@ -1632,7 +1632,7 @@ def add_batch(request):
     technician_department = user_data.Department.strip().upper()
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
 
@@ -1813,7 +1813,7 @@ def view_batches(request):
     mapped_department = DEPARTMENT_MAPPING.get(technician_department, technician_department)
 
     # 🔹 Ensure only Technicians can access
-    if user_data.role != "Lab_Incharge":
+    if user_data.role != "Staff":
         messages.error(request, "You are not authorized to access this page.")
         return redirect("/technician_login")
 
@@ -3036,7 +3036,7 @@ def hod_overview(request):
 
     # Get all technicians under the HOD's department
     technicians_in_dept = list(User.objects.using('rit_e_approval').filter(
-        role="Lab_Incharge",
+        role="Staff",
         Department__iexact=hod_department
     ).values_list("id", flat=True))
 
@@ -3166,7 +3166,7 @@ def hod_dashboard(request):
 
     # 🔹 1. Get Technicians Assigned to the Department
     technicians_in_dept = list(User.objects.using('rit_e_approval').filter(
-    role="Lab_Incharge",
+    role="Staff",
     Department__iexact=hod_department
 ).values_list("id", flat=True))  # Force evaluation
   # Fetch technician IDs
@@ -3367,7 +3367,7 @@ def hod_damaged_apparatus_view(request):
 
     # Get all technicians assigned to the HOD’s department
     technicians_in_dept = list(User.objects.using('rit_e_approval').filter(
-        role="Lab_Incharge",
+        role="Staff",
         Department__iexact=hod_department
     ).values_list("id", flat=True))
 
