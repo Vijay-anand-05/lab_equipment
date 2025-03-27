@@ -1,0 +1,70 @@
+{% extends 'student/base.html' %}
+
+{% block lab_marks_report %}
+
+<div class="container mt-4">
+    <h3 class="fw-bold text-primary text-center mb-4">
+        <i class="fas fa-file-alt"></i> Lab Marks Report
+    </h3>
+
+    {% if student_marks %}
+    <div class="row g-4">
+        {% for mark in student_marks %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                
+                <!-- Card Header -->
+                <div class="card-header bg-gradient text-white text-center py-3" 
+                     style="background: linear-gradient(135deg, #007bff, #6610f2);">
+                    <h5 class="fw-bold m-0">
+                        <i class="fas fa-book-open"></i> {{ mark.lab_exercise__course_code }}
+                    </h5>
+                    <p class="m-0"><small>{{ mark.lab_exercise__practical_course }}</small></p>
+                </div>
+
+                <!-- Card Body -->
+                <div class="card-body p-4">
+                    
+                    <p class="mb-2"><strong><i class="fas fa-vial"></i> Experiment No:</strong> {{ mark.lab_exercise__Ex_no }}</p>
+                    
+                    <p class="mb-2"><strong><i class="fas fa-flask"></i> Experiment Title:</strong> {{ mark.lab_exercise__Ex_title }}</p>
+                    <p class="mb-2"><strong><i class="fas fa-flask"></i> Experiment:</strong> {{ mark.lab_exercise__experiment_date }}</p>
+
+                    
+                    <p class="mb-3"><strong><i class="fas fa-users"></i> Lab Batch:</strong> {{ mark.lab_batch__lab_batch_no }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge fs-6 px-3 py-2 rounded-pill
+                            {% if mark.marks_obtained >= 80 %} bg-success 
+                            {% elif mark.marks_obtained >= 50 %} bg-warning text-dark
+                            {% else %} bg-danger 
+                            {% endif %}">
+                            <i class="fas fa-star"></i> {{ mark.marks_obtained }} Marks
+                        </span>
+                    </div>
+
+                    <div class="p-3 rounded-3" style="background: rgba(0, 123, 255, 0.1);">
+                        <strong><i class="fas fa-comment-dots"></i> Remarks:</strong> 
+                        <span class="text-muted">{{ mark.remarks|default:"No remarks" }}</span>
+                    </div>
+                </div>
+
+                <!-- Card Footer -->
+                <div class="card-footer text-center py-2" style="background: rgba(0,0,0,0.05);">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar-alt"></i> Marked On: {{ mark.entry_date|date:"Y-m-d" }}
+                    </small>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-warning text-center">
+        <i class="fas fa-exclamation-triangle"></i> No marks found.
+    </div>
+    {% endif %}
+</div>
+
+{% endblock lab_marks_report %}

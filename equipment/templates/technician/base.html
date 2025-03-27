@@ -156,7 +156,20 @@
                     <i class="fa fa-eye mr-3"></i> View Batches
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{% url 'lab_marks_entry' %}" 
+                   class="nav-link sidebar-link {% if request.path == '/technician/lab_marks_entry' %}active{% endif %}">
+                    <i class="fas fa-pen-to-square mr-3"></i> Lab Marks Entry
+                </a>
+            </li>
             
+            
+            {% comment %} <li class="nav-item">
+                <a href="{% url 'technician_manual' %}" class="nav-link d-flex align-items-center {% if request.path == '/technician/manual' %}active{% endif %}">
+                    <i class="fas fa-book me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Manual</span>
+                </a>
+            </li> {% endcomment %}
             
             <li class="nav-item">
                 <a href="{% url 'technician_logout' %}" class="nav-link sidebar-link">
@@ -258,6 +271,16 @@
 
         
         {% block review_payment_receipt %}{% endblock review_payment_receipt %}
+
+        
+        {% block technician_manual %}{% endblock technician_manual %}
+
+        
+        {% block lab_marks_entry %}{% endblock lab_marks_entry %}
+
+        
+            
+            
 
         
         

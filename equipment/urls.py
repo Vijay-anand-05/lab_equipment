@@ -14,6 +14,10 @@ urlpatterns = [
     path("student/requested_apparatus/", views.requested_apparatus_view, name="requested_apparatus"),
     path('get_apparatus_details/', views.get_apparatus_details, name='get_apparatus_details'),
     path('student/payment_upload/', views.payment_upload, name='payment_upload'),
+    
+    path("student/lab_marks_report", views.lab_marks_report, name = "lab_marks_report"),
+    
+    
     path('student/manual', views.manual, name = "manual"),
     
     path('student/qr_code/', views.upload_qr, name='qr_code'),
@@ -53,6 +57,17 @@ urlpatterns = [
 
     
     path('technician/review_payment_receipt', views.review_payment_receipt, name = 'review_payment_receipt'),
+    path('technician/manual', views.technician_manual, name = "technician_manual"),
+    
+    
+    path("technician/lab_marks_entry", views.lab_marks_entry, name = "lab_marks_entry"),
+    # path("lab_marks_entry/", lab_marks_entry, name="lab_marks_entry"),
+    # path("save_lab_marks/", views.save_lab_marks, name="save_lab_marks"),
+    
+    
+    
+
+    
 
     
 

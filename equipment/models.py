@@ -294,34 +294,34 @@ class Payment(models.Model):
     def __str__(self):
         return f"{self.student.student_name} - Apparatus: {self.damage_request.apparatus.apparatus_name if self.damage_request else 'N/A'} - Payment Proof Uploaded"
 
-# class Payment(models.Model):
-#     student = models.ForeignKey(
-#         Student_cgpa,  
-#         on_delete=models.CASCADE,
-#         related_name="payments",
-#         db_constraint=False
-#     )
-
-#     payment_proof = models.ImageField(
-#         upload_to="payment_proofs/", blank=True, null=True
-#     )  # Student uploads payment receipt
-
-#     uploaded_at = models.DateTimeField(auto_now_add=True)  # Timestamp when proof is uploaded
-
-#     verified = models.BooleanField(default=False)  # Track if payment is verified
-
-#     class Meta:
-#         db_table = "payment_upload"  
-
-#     def __str__(self):
-#         return f"{self.student.student_name} - Payment Proof Uploaded"
-
-#     def get_lab_batches(self):
-#         """Retrieve lab batches associated with this student."""
-#         return self.student.lab_assignments.all()
-
-#     def get_damaged_apparatus(self):
-#         """Retrieve damaged apparatus linked to this student."""
-#         return ApparatusRequestDamage.objects.filter(student=self.student)
 
 
+class LabBatchMarkEntry(models.Model):
+    technician_id = models.CharField(max_length=100, null=True, blank=True)
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name="student_marks", db_constraint=False
+    )
+    lab_batch = models.ForeignKey(
+        LabBatchAssignment, on_delete=models.CASCADE, related_name="marks", db_constraint=False
+    )
+    lab_exercise = models.ForeignKey(
+        LabExercise, on_delete=models.CASCADE, related_name="batch_marks", db_constraint=False
+    )
+    apparatus = models.ForeignKey(
+        Apparatus, on_delete=models.CASCADE, related_name="lab_marks", db_constraint=False, null=True, blank=True
+    )
+    marks_obtained = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    max_marks = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    remarks = models.TextField(blank=True, null=True)
+    entry_date = models.DateTimeField(auto_now_add=True)
+
+    # ✅ New Field for Tracking Mark Entry
+    is_marked = models.BooleanField(default=False)  
+
+    class Meta:
+        db_table = "lab_batch_mark_entry"
+        ordering = ["-entry_date"]
+        unique_together = ("student", "lab_batch", "lab_exercise")  # Prevent duplicate marks per student per experiment
+
+    def __str__(self):
+        return f"Student {self.student.reg_no} - Batch {self.lab_batch.lab_batch_no} - {self.lab_exercise.Ex_title} - {self.marks_obtained}/{self.max_marks} - Marked: {self.is_marked}"

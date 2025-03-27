@@ -20,6 +20,14 @@ DEPARTMENT_MAPPING = {
 def manual(request):
     return render(request, "student/manual.html")
 
+def technician_manual(request):
+    return render(request, "technician/manual.html")
+
+
+def faculty_manual(request):
+    return render(request, "technician/manual.html")
+
+
 
 
 from django.shortcuts import render
@@ -384,140 +392,140 @@ from datetime import timedelta
 from .models import ApparatusRequest, LabBatchAssignment, Student_cgpa, LabExercise
 
 def requested_apparatus_view(request):
-    student_regno = request.session.get("student_regno")
+        student_regno = request.session.get("student_regno")
 
-    # 🔹 1. Get the logged-in student's details
-    try:
-        student = Student_cgpa.objects.using("rit_cgpatrack").get(reg_no=student_regno)
-    except Student_cgpa.DoesNotExist:
-        return render(request, "student/requested_apparatus.html", {"error": "Student not found"})
+        # 🔹 1. Get the logged-in student's details
+        try:
+            student = Student_cgpa.objects.using("rit_cgpatrack").get(reg_no=student_regno)
+        except Student_cgpa.DoesNotExist:
+            return render(request, "student/requested_apparatus.html", {"error": "Student not found"})
 
-    # 🔹 2. Find the lab batches the student is assigned to (with technician info)
-    assigned_batches = LabBatchAssignment.objects.filter(student=student).values(
-        "lab_batch_no", "course_code", "technician_id", "experiment_date"
-    )
-    print(assigned_batches)
-    if not assigned_batches:
-        return render(request, "student/requested_apparatus.html", {"error": "No lab batch assigned."})
-
-    # 🔹 3. Create a map of course_code -> technician_id for the student
-    technician_course_map = {batch["course_code"]: batch["technician_id"] for batch in assigned_batches}
-
-    # 🔹 4. Find all students assigned to the same lab batches
-    batch_numbers = [batch["lab_batch_no"] for batch in assigned_batches]
-    batch_students = LabBatchAssignment.objects.filter(lab_batch_no__in=batch_numbers).values_list("student__reg_no", flat=True)
-
-    # 🔹 5. Get all apparatus requests for students in the same lab batch **filtered by technician**
-    qs = ApparatusRequest.objects.filter(student__reg_no__in=batch_students)
-
-    # 🔹 6. Annotate requests for grouping
-    qs = qs.annotate(request_minute=TruncMinute("request_date"))
-
-    grouped = (
-        qs.values(
-            "student__reg_no",
-            "lab_batch__course_code",
-            "apparatus__ex_no",
-            "apparatus__department",
-            "lab_batch__lab_batch_no",
-            "status",
-            "request_minute",
-            "apparatus__experiment_name",
-            "apparatus__practical_course",
-            "lab_batch__technician_id",  # ✅ Get assigned technician
+        # 🔹 2. Find the lab batches the student is assigned to (with technician info)
+        assigned_batches = LabBatchAssignment.objects.filter(student=student).values(
+            "lab_batch_no", "course_code", "technician_id", "experiment_date"
         )
-        .annotate(apparatus_count=Count("id"))
-        .order_by("student__reg_no", "lab_batch__lab_batch_no", "request_minute")
-    )
+        print(assigned_batches)
+        if not assigned_batches:
+            return render(request, "student/requested_apparatus.html", {"error": "No lab batch assigned."})
 
-    grouped_list = []
+        # 🔹 3. Create a map of course_code -> technician_id for the student
+        technician_course_map = {batch["course_code"]: batch["technician_id"] for batch in assigned_batches}
 
-    # 🔹 7. Filter the requests to only show the ones assigned by the correct technician
-    for group in grouped:
-        course = group["lab_batch__course_code"]
-        assigned_technician = group["lab_batch__technician_id"]
+        # 🔹 4. Find all students assigned to the same lab batches
+        batch_numbers = [batch["lab_batch_no"] for batch in assigned_batches]
+        batch_students = LabBatchAssignment.objects.filter(lab_batch_no__in=batch_numbers).values_list("student__reg_no", flat=True)
 
-        # ✅ Only include requests where the technician matches the student's assigned technician for that course
-        if course in technician_course_map and technician_course_map[course] == assigned_technician:
-            student_reg = group["student__reg_no"]
-            exp_no = group["apparatus__ex_no"]
-            dept = group["apparatus__department"]
-            lab_batch = group["lab_batch__lab_batch_no"]
-            req_min = group["request_minute"]
-            
-            
-            request_id = ApparatusRequest.objects.filter(
-        student__reg_no=group["student__reg_no"],
-        lab_batch__course_code=group["lab_batch__course_code"],
-        apparatus__ex_no=group["apparatus__ex_no"]
-    ).values_list("id", flat=True).first()
-            
-            experiment_date = next(
-            (batch["experiment_date"] for batch in assigned_batches if batch["course_code"] == course), None
+        # 🔹 5. Get all apparatus requests for students in the same lab batch **filtered by technician**
+        qs = ApparatusRequest.objects.filter(student__reg_no__in=batch_students)
+
+        # 🔹 6. Annotate requests for grouping
+        qs = qs.annotate(request_minute=TruncMinute("request_date"))
+
+        grouped = (
+            qs.values(
+                "student__reg_no",
+                "lab_batch__course_code",
+                "apparatus__ex_no",
+                "apparatus__department",
+                "lab_batch__lab_batch_no",
+                "status",
+                "request_minute",
+                "apparatus__experiment_name",
+                "apparatus__practical_course",
+                "lab_batch__technician_id",  # ✅ Get assigned technician
+            )
+            .annotate(apparatus_count=Count("id"))
+            .order_by("student__reg_no", "lab_batch__lab_batch_no", "request_minute")
         )
 
-            paid = ApparatusRequest.objects.filter(
-    student__reg_no=group["student__reg_no"],
-    lab_batch__course_code=group["lab_batch__course_code"],
-    apparatus__ex_no=group["apparatus__ex_no"],
-    verified=True  # ✅ Check if all requests for this student & experiment are verified
-).exists()
+        grouped_list = []
 
-            payment_status = "Paid" if paid else "Not Paid"
+        # 🔹 7. Filter the requests to only show the ones assigned by the correct technician
+        for group in grouped:
+            course = group["lab_batch__course_code"]
+            assigned_technician = group["lab_batch__technician_id"]
 
-            verified = (payment_status == "Paid")
-            # 🔹 Fetch apparatus details from `ApparatusRequest`
-            details_qs = ApparatusRequest.objects.filter(
-                student__reg_no=student_reg,
-                lab_batch__course_code=course,
-                apparatus__ex_no=exp_no,
-                apparatus__department=dept,
-                lab_batch__lab_batch_no=lab_batch,
-                request_date__gte=req_min,
-                request_date__lt=req_min + timedelta(minutes=1),
+            # ✅ Only include requests where the technician matches the student's assigned technician for that course
+            if course in technician_course_map and technician_course_map[course] == assigned_technician:
+                student_reg = group["student__reg_no"]
+                exp_no = group["apparatus__ex_no"]
+                dept = group["apparatus__department"]
+                lab_batch = group["lab_batch__lab_batch_no"]
+                req_min = group["request_minute"]
+                
+                
+                request_id = ApparatusRequest.objects.filter(
+            student__reg_no=group["student__reg_no"],
+            lab_batch__course_code=group["lab_batch__course_code"],
+            apparatus__ex_no=group["apparatus__ex_no"]
+        ).values_list("id", flat=True).first()
+                
+                experiment_date = next(
+                (batch["experiment_date"] for batch in assigned_batches if batch["course_code"] == course), None
             )
 
-            if details_qs.exists():
-                # ✅ Apparatus exists, fetch details from `ApparatusRequest`
-                group["details"] = list(
-                    details_qs.values(
-                        "apparatus__apparatus_name",
-                        "apparatus__range_specification",
-                        "apparatus__quantity_available",
+                paid = ApparatusRequest.objects.filter(
+        student__reg_no=group["student__reg_no"],
+        lab_batch__course_code=group["lab_batch__course_code"],
+        apparatus__ex_no=group["apparatus__ex_no"],
+        verified=True  # ✅ Check if all requests for this student & experiment are verified
+    ).exists()
+
+                payment_status = "Paid" if paid else "Not Paid"
+
+                verified = (payment_status == "Paid")
+                # 🔹 Fetch apparatus details from `ApparatusRequest`
+                details_qs = ApparatusRequest.objects.filter(
+                    student__reg_no=student_reg,
+                    lab_batch__course_code=course,
+                    apparatus__ex_no=exp_no,
+                    apparatus__department=dept,
+                    lab_batch__lab_batch_no=lab_batch,
+                    request_date__gte=req_min,
+                    request_date__lt=req_min + timedelta(minutes=1),
+                )
+
+                if details_qs.exists():
+                    # ✅ Apparatus exists, fetch details from `ApparatusRequest`
+                    group["details"] = list(
+                        details_qs.values(
+                            "apparatus__apparatus_name",
+                            "apparatus__range_specification",
+                            "apparatus__quantity_available",
+                        )
                     )
-                )
-            else:
-                # 🔹 No apparatus found, fetch details from `LabExercise`
-                lab_exercise_qs = LabExercise.objects.filter(course_code=course, Ex_no=exp_no).values(
-                    "experiment_name", "practical_course"
-                )
-
-                if lab_exercise_qs.exists():
-                    lab_exercise_data = lab_exercise_qs.first()
-                    group["details"] = [
-                        {
-                            "apparatus__apparatus_name": "N/A",
-                            "apparatus__range_specification": "N/A",
-                            "apparatus__quantity_available": "N/A",
-                            "experiment_name": lab_exercise_data["experiment_name"],
-                            "practical_course": lab_exercise_data["practical_course"],
-                        }
-                    ]
                 else:
-                    group["details"] = [{"error": "No apparatus or experiment data found"}]
-            group["experiment_date"] = experiment_date
-            group["payment_status"] = payment_status
-            group["request_id"] = request_id
-            grouped_list.append(group)
+                    # 🔹 No apparatus found, fetch details from `LabExercise`
+                    lab_exercise_qs = LabExercise.objects.filter(course_code=course, Ex_no=exp_no).values(
+                        "experiment_name", "practical_course"
+                    )
 
-    context = {
-        "student_name": student.student_name,
-        "department": student.department,
-        "student_reg_no": student.reg_no,
-        "grouped_requests": grouped_list,
-    }
+                    if lab_exercise_qs.exists():
+                        lab_exercise_data = lab_exercise_qs.first()
+                        group["details"] = [
+                            {
+                                "apparatus__apparatus_name": "N/A",
+                                "apparatus__range_specification": "N/A",
+                                "apparatus__quantity_available": "N/A",
+                                "experiment_name": lab_exercise_data["experiment_name"],
+                                "practical_course": lab_exercise_data["practical_course"],
+                            }
+                        ]
+                    else:
+                        group["details"] = [{"error": "No apparatus or experiment data found"}]
+                group["experiment_date"] = experiment_date
+                group["payment_status"] = payment_status
+                group["request_id"] = request_id
+                grouped_list.append(group)
 
-    return render(request, "student/requested_apparatus.html", context)
+        context = {
+            "student_name": student.student_name,
+            "department": student.department,
+            "student_reg_no": student.reg_no,
+            "grouped_requests": grouped_list,
+        }
+
+        return render(request, "student/requested_apparatus.html", context)
 
 
 
@@ -1374,11 +1382,27 @@ def add_course(request):
     )
 
     sem = list(range(1, 9))  # Semesters from 1 to 8
-
+    faculty_data = User.objects.using('rit_e_approval')\
+    .filter(Department=user_data.Department)\
+    .values_list("id", "Name")
+    unique_faculties = list({name: (id, name) for id, name in faculty_data}.values())
+    print(unique_faculties)
+    regulations = regulation_master.objects.all()
+    batches = Student_cgpa.objects.using("rit_cgpatrack").values_list("batch", flat=True).distinct()
+    
+    context = {"form": form, 
+               "departments": department_list, 
+               "sem": sem, 
+               "user_data" : user_data,
+               "faculties" : unique_faculties,
+               "regulations" : regulations,
+               "batches" : batches
+               }
+    
     return render(
         request,
         "technician/add_course.html",
-        {"form": form, "departments": department_list, "sem": sem, "user_data" : user_data},
+        context
     )
 
 
@@ -1735,7 +1759,9 @@ def add_batch(request):
             students = students.filter(batch=batch_filter)
         if section_filter:
             students = students.filter(section=section_filter)
-        students = students.order_by("-gender")
+
+        # Order by Female first, then by Registration Number
+        students = students.order_by("gender", "reg_no")  
 
         assigned_regnos = list(
             LabBatchAssignment.objects.filter(
@@ -1745,6 +1771,7 @@ def add_batch(request):
             ).values_list("student__reg_no", flat=True)
         )
         students = students.exclude(reg_no__in=assigned_regnos)
+
 
     # Retrieve filter options:
     batches = Course.objects.values_list("batch", flat=True).distinct()
@@ -1965,7 +1992,147 @@ def edit_lab_batch_assignment(request, assignment_id):
     return render(request, "technician/edit_lab_batch.html", context)
 
 
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import LabBatchMarkEntry, LabBatchAssignment, LabExercise, Course
+from django.db.models import Count
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db.models import Count
+from urllib.parse import urlencode
 
+def lab_marks_entry(request):
+    user_id = request.session.get("user_id", None)
+    if not user_id:
+        return redirect("/technician_login")
+
+    user_data = User.objects.using("rit_e_approval").get(id=user_id)
+
+    if user_data.role != "Staff":
+        messages.error(request, "You are not authorized to access this page.")
+        return redirect("/technician_login")
+
+    # 🔹 Retrieve filter values from GET request
+    course_code = request.GET.get("course_code", "")
+    experiment_no = request.GET.get("experiment_no", "")
+    lab_batch_no = request.GET.get("lab_batch_no", "")
+
+    # 🔹 Get course codes, experiment numbers, and batches for filtering
+    course_codes = LabExercise.objects.filter(technician_id=user_id).values_list("course_code", flat=True).distinct()
+    ex_nos = LabExercise.objects.filter(technician_id=user_id).values_list("Ex_no", flat=True).distinct()
+    batch_nos = LabBatchAssignment.objects.filter(technician_id = user_id).values_list("lab_batch_no", flat=True).distinct()
+
+    # 🔹 Group students by lab batch and experiment number
+    grouped_batches = (
+        LabBatchAssignment.objects.filter(technician_id=user_id)
+        .values("lab_batch_no", "course_code", "ex_no")
+        .annotate(student_count=Count("student_id"))
+    )
+
+    if course_code:
+        grouped_batches = grouped_batches.filter(course_code=course_code)
+    if experiment_no:
+        grouped_batches = grouped_batches.filter(ex_no=experiment_no)
+    if lab_batch_no:
+        grouped_batches = grouped_batches.filter(lab_batch_no=lab_batch_no)
+
+    # 🔹 Process form submission (marks entry)
+    if request.method == "POST":
+        batch_no = request.POST.get("lab_batch_no")
+        exp_no = request.POST.get("experiment_no")
+        marks = request.POST.get("marks")
+        remark = request.POST.get("remark", "")
+
+        if batch_no and exp_no and marks:
+            # Retrieve the lab_batch object
+            lab_batch = LabBatchAssignment.objects.filter(lab_batch_no=batch_no, ex_no=exp_no, technician_id = user_id,).first()
+            
+            # Retrieve the lab_exercise object
+            lab_exercise = LabExercise.objects.filter(course_code=lab_batch.course_code, Ex_no=exp_no, technician_id = user_id,).first()
+            
+            if lab_batch and lab_exercise:
+                # Assign marks to all students in the selected batch
+                students = LabBatchAssignment.objects.filter(lab_batch_no=batch_no, ex_no=exp_no, technician_id = user_id,)
+                for student in students:
+                    LabBatchMarkEntry.objects.update_or_create(
+                        technician_id = user_id,
+                        student_id=student.student_id,
+                        lab_exercise=lab_exercise,
+                        lab_batch=lab_batch,
+                        is_marked = True,
+                        defaults={"marks_obtained": marks, "remarks": remark},
+                    )
+
+                messages.success(request, "Marks and remarks updated for batch!")
+                
+                # Redirect with filter parameters
+                params = {
+                    "course_code": course_code,
+                    "experiment_no": experiment_no,
+                    "lab_batch_no": lab_batch_no,
+                }
+                redirect_url = f"{request.path}?{urlencode(params)}"
+                return redirect(redirect_url)
+            else:
+                messages.error(request, "Lab batch or exercise not found!")
+        else:
+            messages.error(request, "Invalid input data!")
+    print("batch nos : ",batch_nos)
+    context = {
+        "user_data": user_data,
+        "courses": course_codes,
+        "experiments": ex_nos,
+        "batch_no": batch_nos,
+        "grouped_batches": grouped_batches,
+    }
+
+    return render(request, "technician/lab_marks_entry.html", context)
+
+
+
+def lab_marks_report(request):
+    student_regno = request.session.get("student_regno")
+    department = request.session.get("department")
+
+    if not student_regno:
+        return render(
+            request,
+            "error.html",
+            {"message": "Student registration number not found in session."},
+        )
+
+    try:
+        # Retrieve student details including department
+        student_details = Student_cgpa.objects.using("rit_cgpatrack").get(
+            reg_no=student_regno
+        )
+
+        # Retrieve the student's lab marks
+        student_marks = (
+            LabBatchMarkEntry.objects.filter(student_id=student_regno)
+            .select_related("lab_exercise", "lab_batch")
+            .values(
+                "lab_exercise__course_code",
+                "lab_exercise__Ex_no",
+                "lab_exercise__practical_course",
+                "lab_exercise__Ex_title",
+                "lab_exercise__experiment_date",
+                "lab_batch__lab_batch_no",
+                "marks_obtained",
+                "remarks",
+                "entry_date"
+            )
+        )
+
+    except Student_cgpa.DoesNotExist:
+        return render(request, "error.html", {"message": "Student details not found."})
+
+    context = {
+        "student_details": student_details,
+        "student_marks": student_marks,
+    }
+
+    return render(request, "student/lab_marks_report.html", context)
 
 
 # from .decorators import technician_required

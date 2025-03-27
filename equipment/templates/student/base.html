@@ -97,6 +97,13 @@
                     <span>Payments & Upload</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{% url 'lab_marks_report' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/lab_marks_report' %}active{% endif %}">
+                    <i class="fas fa-chart-bar me-3" style="width: 25px; text-align: center;"></i>
+                    <span>Lab Marks Report</span>
+                </a>
+            </li>
+            
         
             <li class="nav-item">
                 <a href="{% url 'manual' %}" class="nav-link d-flex align-items-center {% if request.path == '/student/manual' %}active{% endif %}">
@@ -143,9 +150,15 @@
         {% block apparatus_details %}{% endblock apparatus_details %}
         
         {% block payment_and_upload %}{% endblock payment_and_upload %}
+
+        {% block lab_marks_report %}{% endblock lab_marks_report %}
+
         
         
         {% block manual %}{% endblock manual %}
+
+        
+            
             
             
 
